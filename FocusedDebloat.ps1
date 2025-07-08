@@ -59,19 +59,7 @@ Write-Output "- Skip HP bloat: $skipHP"
 Write-Output "- Skip Dell bloat: $skipDell"
 Write-Output "- Skip Lenovo bloat: $skipLenovo"
 
-##Elevate if needed
-If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
-    Write-Output "You didn't run this script as an Administrator. This script will self elevate to run as an Administrator and continue."
-    Start-Sleep 1
-    Write-Output "                                               3"
-    Start-Sleep 1
-    Write-Output "                                               2"
-    Start-Sleep 1
-    Write-Output "                                               1"
-    Start-Sleep 1
-    Start-Process powershell.exe -ArgumentList ("-NoProfile -ExecutionPolicy Bypass -File `"{0}`" -customwhitelist {1}" -f $PSCommandPath, ($customwhitelist -join ',')) -Verb RunAs
-    Exit
-}
+# Admin check removed - Datto RMM runs with admin privileges automatically
 
 #Get the Current start time in UTC format
 $startUtc = [datetime]::UtcNow
