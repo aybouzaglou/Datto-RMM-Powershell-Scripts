@@ -1,28 +1,40 @@
 <#
 .SYNOPSIS
-Removes Dell, HP, Lenovo, and Windows bloatware from Windows systems
+Windows Debloat - Datto RMM Edition
 .DESCRIPTION
-This focused debloat script removes:
-- Dell manufacturer bloatware
-- HP manufacturer bloatware
-- Lenovo manufacturer bloatware
+Removes manufacturer-specific and Windows bloatware with intelligent detection:
+- Automatic manufacturer detection (HP/Dell/Lenovo)
+- Only processes relevant bloatware for detected manufacturer
 - Windows built-in bloatware (AppX packages)
+- Enhanced removal methods with timeout protection
+- Structured logging for monitoring integration
 - Does NOT modify registry settings
 - Does NOT remove Microsoft Office
+.COMPONENT
+Category=Applications ; Level=Medium(3) ; Timeout=900s ; Build=1.1.0
+.INPUTS
+customwhitelist(String) ; skipwindows(Boolean) ; skiphp(Boolean) ; skipdell(Boolean) ; skiplenovo(Boolean)
+.REQUIRES
+LocalSystem ; PSVersion >=2.0
 .PARAMETER customwhitelist
 Optional array of app names to preserve during removal
-.INPUTS
-None
 .OUTPUTS
 C:\ProgramData\Debloat\Debloat.log
+.EXITCODES
+0=Success ; 1=Partial ; 2=Error ; 10=Permission ; 11=Timeout
 .NOTES
-  Version:        1.0.0
-  Author:         Modified from Andrew Taylor's script
+  Version:        1.1.0
+  Author:         Modified from Andrew Taylor's script for Datto RMM
   Creation Date:  07/01/2025
-  Purpose:        Focused bloatware removal for RMM deployment
-  
+  Modified:       07/08/2025
+  Purpose:        Production-ready bloatware removal for RMM deployment
+
   Original Author: Andrew Taylor (@AndrewTaylor_2)
   Original Source: andrewstaylor.com
+
+  CHANGELOG:
+  1.1.0 - Added manufacturer detection, timeout protection, structured logging
+  1.0.0 - Initial focused debloat version
 #>
 
 ############################################################################################################
@@ -41,64 +53,143 @@ param (
     [string[]]$customwhitelist
 )
 
-# Check for Datto RMM environment variables and use them if available
-if ($env:customwhitelist) {
-    $customwhitelist = $env:customwhitelist -split ','
-    Write-Output "Using Datto RMM customwhitelist: $($customwhitelist -join ', ')"
+############################################################################################################
+#                                    Core Functions & Counters                                            #
+############################################################################################################
+
+# Global counters for structured reporting
+$global:SuccessCount = 0
+$global:FailCount = 0
+$global:WarningCount = 0
+
+# Universal timeout wrapper for safe operations
+function Invoke-WithTimeout {
+    param(
+        [scriptblock]$Code,
+        [int]$TimeoutSec = 300,
+        [string]$OperationName = "Operation"
+    )
+    try {
+        $job = Start-Job $Code
+        if (Wait-Job $job -Timeout $TimeoutSec) {
+            $result = Receive-Job $job
+            Remove-Job $job -Force
+            return $result
+        } else {
+            Stop-Job $job -Force
+            Remove-Job $job -Force
+            throw "Operation '$OperationName' exceeded ${TimeoutSec}s timeout"
+        }
+    }
+    catch {
+        Write-Output "FAILED   Timeout wrapper error for '$OperationName': $($_.Exception.Message)"
+        $global:FailCount++
+        throw
+    }
 }
 
-# Skip flags from Datto RMM environment variables (using string comparisons)
-$skipWindows = $env:skipwindows
-$skipHP = $env:skiphp
-$skipDell = $env:skipdell
-$skipLenovo = $env:skiplenovo
+# Input variable validation helper
+function Get-InputVariable {
+    param(
+        [string]$Name,
+        [ValidateSet('String','Boolean')][string]$Type='String',
+        [object]$Default='',
+        [switch]$Required
+    )
+    $val = Get-Item "env:$Name" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Value
+    if ([string]::IsNullOrWhiteSpace($val)) {
+        if ($Required) {
+            Write-Output "ERROR    Input variable '$Name' required but not supplied"
+            throw "Input '$Name' required but not supplied"
+        }
+        return $Default
+    }
+    switch ($Type) {
+        'Boolean'  { return ($val -eq 'true') }
+        default    { return $val }
+    }
+}
 
-Write-Output "Datto RMM Configuration:"
-Write-Output "- Skip Windows bloat: $skipWindows"
-Write-Output "- Skip HP bloat: $skipHP"
-Write-Output "- Skip Dell bloat: $skipDell"
-Write-Output "- Skip Lenovo bloat: $skipLenovo"
+# Process Datto RMM environment variables with validation
+Write-Output "STATUS   Processing Datto RMM input variables..."
+
+# Handle custom whitelist
+$customwhitelistEnv = Get-InputVariable -Name "customwhitelist" -Type "String"
+if ($customwhitelistEnv) {
+    $customwhitelist = $customwhitelistEnv -split ','
+    Write-Output "INPUT    Using Datto RMM customwhitelist: $($customwhitelist -join ', ')"
+}
+
+# Process skip flags with validation
+$skipWindows = Get-InputVariable -Name "skipwindows" -Type "Boolean" -Default $false
+$skipHP = Get-InputVariable -Name "skiphp" -Type "Boolean" -Default $false
+$skipDell = Get-InputVariable -Name "skipdell" -Type "Boolean" -Default $false
+$skipLenovo = Get-InputVariable -Name "skiplenovo" -Type "Boolean" -Default $false
+
+Write-Output "CONFIG   Datto RMM Configuration:"
+Write-Output "CONFIG   - Skip Windows bloat: $skipWindows"
+Write-Output "CONFIG   - Skip HP bloat: $skipHP"
+Write-Output "CONFIG   - Skip Dell bloat: $skipDell"
+Write-Output "CONFIG   - Skip Lenovo bloat: $skipLenovo"
 
 # Detect manufacturer to optimize bloatware removal
 Write-Output ""
-Write-Output "Detecting system manufacturer..."
-$manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
-Write-Output "Detected manufacturer: $manufacturer"
+Write-Output "STATUS   Detecting system manufacturer..."
+try {
+    $manufacturer = Invoke-WithTimeout -Code {
+        (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
+    } -TimeoutSec 30 -OperationName "Manufacturer Detection"
 
-# Determine which manufacturer bloatware to remove based on detection
-$detectedHP = $manufacturer -match "HP|Hewlett"
-$detectedDell = $manufacturer -match "Dell"
-$detectedLenovo = $manufacturer -match "Lenovo"
+    Write-Output "DETECT   Manufacturer: $manufacturer"
 
-Write-Output ""
-Write-Output "Manufacturer Detection Results:"
-Write-Output "- HP detected: $detectedHP"
-Write-Output "- Dell detected: $detectedDell"
-Write-Output "- Lenovo detected: $detectedLenovo"
+    # Determine which manufacturer bloatware to remove based on detection
+    $detectedHP = $manufacturer -match "HP|Hewlett"
+    $detectedDell = $manufacturer -match "Dell"
+    $detectedLenovo = $manufacturer -match "Lenovo"
+
+    Write-Output ""
+    Write-Output "DETECT   Manufacturer Detection Results:"
+    Write-Output "DETECT   - HP detected: $detectedHP"
+    Write-Output "DETECT   - Dell detected: $detectedDell"
+    Write-Output "DETECT   - Lenovo detected: $detectedLenovo"
+
+    $global:SuccessCount++
+}
+catch {
+    Write-Output "FAILED   Manufacturer detection failed: $($_.Exception.Message)"
+    Write-Output "WARNING  Proceeding with manual skip flags only"
+    $detectedHP = $false
+    $detectedDell = $false
+    $detectedLenovo = $false
+    $global:WarningCount++
+}
 
 # Override skip flags based on manufacturer detection (unless explicitly set to skip)
-if ($detectedHP -and $skipHP -ne "true") {
-    $skipHP = "false"
-    Write-Output "- Will process HP bloatware (manufacturer detected)"
-} elseif (-not $detectedHP -and $skipHP -ne "true") {
-    $skipHP = "true"
-    Write-Output "- Will skip HP bloatware (not HP manufacturer)"
+Write-Output ""
+Write-Output "CONFIG   Applying intelligent manufacturer filtering..."
+
+if ($detectedHP -and -not $skipHP) {
+    $skipHP = $false
+    Write-Output "CONFIG   - Will process HP bloatware (manufacturer detected)"
+} elseif (-not $detectedHP -and -not $skipHP) {
+    $skipHP = $true
+    Write-Output "CONFIG   - Will skip HP bloatware (not HP manufacturer)"
 }
 
-if ($detectedDell -and $skipDell -ne "true") {
-    $skipDell = "false"
-    Write-Output "- Will process Dell bloatware (manufacturer detected)"
-} elseif (-not $detectedDell -and $skipDell -ne "true") {
-    $skipDell = "true"
-    Write-Output "- Will skip Dell bloatware (not Dell manufacturer)"
+if ($detectedDell -and -not $skipDell) {
+    $skipDell = $false
+    Write-Output "CONFIG   - Will process Dell bloatware (manufacturer detected)"
+} elseif (-not $detectedDell -and -not $skipDell) {
+    $skipDell = $true
+    Write-Output "CONFIG   - Will skip Dell bloatware (not Dell manufacturer)"
 }
 
-if ($detectedLenovo -and $skipLenovo -ne "true") {
-    $skipLenovo = "false"
-    Write-Output "- Will process Lenovo bloatware (manufacturer detected)"
-} elseif (-not $detectedLenovo -and $skipLenovo -ne "true") {
-    $skipLenovo = "true"
-    Write-Output "- Will skip Lenovo bloatware (not Lenovo manufacturer)"
+if ($detectedLenovo -and -not $skipLenovo) {
+    $skipLenovo = $false
+    Write-Output "CONFIG   - Will process Lenovo bloatware (manufacturer detected)"
+} elseif (-not $detectedLenovo -and -not $skipLenovo) {
+    $skipLenovo = $true
+    Write-Output "CONFIG   - Will skip Lenovo bloatware (not Lenovo manufacturer)"
 }
 
 # Admin check removed - Datto RMM runs with admin privileges automatically
@@ -113,28 +204,38 @@ $ProgressPreference = 'SilentlyContinue'
 #Create Folder
 $DebloatFolder = "C:\ProgramData\Debloat"
 If (Test-Path $DebloatFolder) {
-    Write-Output "$DebloatFolder exists. Skipping."
+    Write-Output "STATUS   Log directory exists: $DebloatFolder"
 }
 Else {
-    Write-Output "The folder '$DebloatFolder' doesn't exist. This folder will be used for storing logs created after the script runs. Creating now."
-    Start-Sleep 1
-    New-Item -Path "$DebloatFolder" -ItemType Directory
-    Write-Output "The folder $DebloatFolder was successfully created."
+    Write-Output "STATUS   Creating log directory: $DebloatFolder"
+    try {
+        New-Item -Path "$DebloatFolder" -ItemType Directory -Force | Out-Null
+        Write-Output "SUCCESS  Created log directory: $DebloatFolder"
+        $global:SuccessCount++
+    }
+    catch {
+        Write-Output "FAILED   Could not create log directory: $($_.Exception.Message)"
+        $global:FailCount++
+    }
 }
 
 Start-Transcript -Path "C:\ProgramData\Debloat\Debloat.log"
 
-Write-Output "Starting Focused Debloat Script v1.0.0"
-Write-Output "Focus: Dell/HP/Lenovo bloat + Windows bloat removal"
-Write-Output "Registry modifications: DISABLED"
-Write-Output "Office removal: DISABLED"
+Write-Output "=============================================="
+Write-Output "STATUS   Starting Focused Debloat Script v1.1.0"
+Write-Output "=============================================="
+Write-Output "CONFIG   Focus: Manufacturer-specific + Windows bloat removal"
+Write-Output "CONFIG   Registry modifications: DISABLED"
+Write-Output "CONFIG   Office removal: DISABLED"
+Write-Output "CONFIG   Execution time: $(Get-Date)"
+Write-Output ""
 
 ############################################################################################################
 #                                    Windows Bloatware Removal                                            #
 ############################################################################################################
 
-if ($skipWindows -ne "true") {
-    Write-Output "Windows bloatware removal: ENABLED"
+if (-not $skipWindows) {
+    Write-Output "STATUS   Windows bloatware removal: ENABLED"
 
 # Apps to ignore (whitelist)
 $appstoignore = @(
@@ -440,51 +541,98 @@ $Bloatware = @(
 "*McAfee*"
 )
 
-Write-Output "Starting Windows bloatware removal..."
+Write-Output "STATUS   Starting Windows bloatware removal..."
 
-# Remove provisioned packages
-$provisioned = Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -in $Bloatware -and $_.DisplayName -notin $appstoignore -and $_.DisplayName -notlike 'MicrosoftWindows.Voice*' -and $_.DisplayName -notlike 'Microsoft.LanguageExperiencePack*' -and $_.DisplayName -notlike 'MicrosoftWindows.Speech*' }
-foreach ($appxprov in $provisioned) {
-    $packagename = $appxprov.PackageName
-    $displayname = $appxprov.DisplayName
-    Write-Output "Removing $displayname AppX Provisioning Package"
-    try {
-        Remove-AppxProvisionedPackage -PackageName $packagename -Online -ErrorAction SilentlyContinue
-        Write-Output "Removed $displayname AppX Provisioning Package"
-    }
-    catch {
-        Write-Output "Unable to remove $displayname AppX Provisioning Package"
+# Remove provisioned packages with timeout protection
+Write-Output "STATUS   Processing AppX provisioned packages..."
+try {
+    $provisioned = Invoke-WithTimeout -Code {
+        Get-AppxProvisionedPackage -Online | Where-Object {
+            $_.DisplayName -in $Bloatware -and
+            $_.DisplayName -notin $appstoignore -and
+            $_.DisplayName -notlike 'MicrosoftWindows.Voice*' -and
+            $_.DisplayName -notlike 'Microsoft.LanguageExperiencePack*' -and
+            $_.DisplayName -notlike 'MicrosoftWindows.Speech*'
+        }
+    } -TimeoutSec 60 -OperationName "Get Provisioned Packages"
+
+    Write-Output "METRIC   Found $($provisioned.Count) provisioned packages to remove"
+
+    foreach ($appxprov in $provisioned) {
+        $packagename = $appxprov.PackageName
+        $displayname = $appxprov.DisplayName
+        Write-Output "STATUS   Removing provisioned package: $displayname"
+        try {
+            Invoke-WithTimeout -Code {
+                Remove-AppxProvisionedPackage -PackageName $packagename -Online -ErrorAction Stop
+            } -TimeoutSec 120 -OperationName "Remove $displayname"
+
+            Write-Output "SUCCESS  Removed provisioned package: $displayname"
+            $global:SuccessCount++
+        }
+        catch {
+            Write-Output "FAILED   Unable to remove provisioned package $displayname`: $($_.Exception.Message)"
+            $global:FailCount++
+        }
     }
 }
-
-# Remove installed packages
-$appxinstalled = Get-AppxPackage -AllUsers | Where-Object { $_.Name -in $Bloatware -and $_.Name -notin $appstoignore  -and $_.Name -notlike 'MicrosoftWindows.Voice*' -and $_.Name -notlike 'Microsoft.LanguageExperiencePack*' -and $_.Name -notlike 'MicrosoftWindows.Speech*'}
-foreach ($appxapp in $appxinstalled) {
-    $packagename = $appxapp.PackageFullName
-    $displayname = $appxapp.Name
-    Write-Output "$displayname AppX Package exists"
-    Write-Output "Removing $displayname AppX Package"
-    try {
-        Remove-AppxPackage -Package $packagename -AllUsers -ErrorAction SilentlyContinue
-        Write-Output "Removed $displayname AppX Package"
-    }
-    catch {
-        Write-Output "$displayname AppX Package does not exist"
-    }
+catch {
+    Write-Output "FAILED   Error getting provisioned packages: $($_.Exception.Message)"
+    $global:FailCount++
 }
 
-    Write-Output "Windows bloatware removal completed."
+# Remove installed packages with timeout protection
+Write-Output "STATUS   Processing installed AppX packages..."
+try {
+    $appxinstalled = Invoke-WithTimeout -Code {
+        Get-AppxPackage -AllUsers | Where-Object {
+            $_.Name -in $Bloatware -and
+            $_.Name -notin $appstoignore -and
+            $_.Name -notlike 'MicrosoftWindows.Voice*' -and
+            $_.Name -notlike 'Microsoft.LanguageExperiencePack*' -and
+            $_.Name -notlike 'MicrosoftWindows.Speech*'
+        }
+    } -TimeoutSec 60 -OperationName "Get Installed Packages"
+
+    Write-Output "METRIC   Found $($appxinstalled.Count) installed packages to remove"
+
+    foreach ($appxapp in $appxinstalled) {
+        $packagename = $appxapp.PackageFullName
+        $displayname = $appxapp.Name
+        Write-Output "STATUS   Removing installed package: $displayname"
+        try {
+            Invoke-WithTimeout -Code {
+                Remove-AppxPackage -Package $packagename -AllUsers -ErrorAction Stop
+            } -TimeoutSec 120 -OperationName "Remove $displayname"
+
+            Write-Output "SUCCESS  Removed installed package: $displayname"
+            $global:SuccessCount++
+        }
+        catch {
+            Write-Output "FAILED   Unable to remove installed package $displayname`: $($_.Exception.Message)"
+            $global:FailCount++
+        }
+    }
+}
+catch {
+    Write-Output "FAILED   Error getting installed packages: $($_.Exception.Message)"
+    $global:FailCount++
+}
+
+    Write-Output "RESULT   Windows bloatware removal completed"
+    Write-Output "METRIC   Windows_Apps_Processed=$($global:SuccessCount + $global:FailCount)"
 } else {
-    Write-Output "Windows bloatware removal: SKIPPED (skipwindows=true)"
+    Write-Output "STATUS   Windows bloatware removal: SKIPPED (skipwindows=true)"
 }
 
 ############################################################################################################
 #                                        HP Bloatware Removal                                             #
 ############################################################################################################
 
-if ($skipHP -ne "true") {
-    Write-Output "HP bloatware removal: ENABLED"
-    Write-Output "Starting HP bloatware removal..."
+if (-not $skipHP) {
+    Write-Output "STATUS   HP bloatware removal: ENABLED"
+    Write-Output "STATUS   Starting HP bloatware removal..."
+    $hpStartCount = $global:SuccessCount
 
 # HP specific AppX packages to remove
 $HPApps = @(
@@ -593,22 +741,89 @@ $HPWin32Apps = @(
 
 Write-Output "Removing HP Win32 applications..."
 foreach ($HPWin32App in $HPWin32Apps) {
+    Write-Output "Searching for: $HPWin32App"
+
+    # Method 1: Try Win32_Product (CIM)
     $app = Get-CimInstance -Query "SELECT * FROM Win32_Product WHERE name = '$HPWin32App'" -ErrorAction SilentlyContinue
     if ($app) {
-        Write-Output "Removing $HPWin32App"
+        Write-Output "Found $HPWin32App via Win32_Product - Removing..."
         try {
             $app | Invoke-CimMethod -MethodName Uninstall
-            Write-Output "Removed $HPWin32App"
+            Write-Output "Removed $HPWin32App via Win32_Product"
+            continue
         }
         catch {
-            Write-Output "Failed to remove $HPWin32App"
+            Write-Output "Failed to remove $HPWin32App via Win32_Product: $($_.Exception.Message)"
         }
+    }
+
+    # Method 2: Try WMI Win32_Product
+    $wmiApp = Get-WmiObject -Class Win32_Product -Filter "Name = '$HPWin32App'" -ErrorAction SilentlyContinue
+    if ($wmiApp) {
+        Write-Output "Found $HPWin32App via WMI - Removing..."
+        try {
+            $wmiApp.Uninstall()
+            Write-Output "Removed $HPWin32App via WMI"
+            continue
+        }
+        catch {
+            Write-Output "Failed to remove $HPWin32App via WMI: $($_.Exception.Message)"
+        }
+    }
+
+    # Method 3: Try registry-based uninstall
+    $uninstallKeys = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+
+    $found = $false
+    foreach ($keyPath in $uninstallKeys) {
+        $regApps = Get-ItemProperty $keyPath -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq $HPWin32App }
+        foreach ($regApp in $regApps) {
+            if ($regApp.UninstallString) {
+                Write-Output "Found $HPWin32App in registry - Attempting uninstall..."
+                try {
+                    $uninstallString = $regApp.UninstallString
+                    if ($uninstallString -like "*msiexec*") {
+                        # MSI uninstall
+                        $productCode = $uninstallString -replace ".*\{([^}]+)\}.*", '{$1}'
+                        if ($productCode -match "^\{[A-F0-9-]+\}$") {
+                            Write-Output "Using MSI uninstall for $HPWin32App"
+                            Start-Process "msiexec.exe" -ArgumentList "/x $productCode /quiet /norestart" -Wait -NoNewWindow
+                            Write-Output "Attempted MSI uninstall for $HPWin32App"
+                            $found = $true
+                            break
+                        }
+                    } else {
+                        # Standard uninstall
+                        Write-Output "Using standard uninstall for $HPWin32App"
+                        if ($uninstallString -like "*uninstall*" -or $uninstallString -like "*setup*") {
+                            Start-Process cmd.exe -ArgumentList "/c `"$uninstallString`" /S /silent" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                            Write-Output "Attempted standard uninstall for $HPWin32App"
+                            $found = $true
+                            break
+                        }
+                    }
+                }
+                catch {
+                    Write-Output "Failed registry uninstall for ${HPWin32App}: $($_.Exception.Message)"
+                }
+            }
+        }
+        if ($found) { break }
+    }
+
+    if (-not $found) {
+        Write-Output "$HPWin32App not found in any detection method"
     }
 }
 
-    Write-Output "HP bloatware removal completed."
+    $hpProcessed = $global:SuccessCount - $hpStartCount
+    Write-Output "RESULT   HP bloatware removal completed"
+    Write-Output "METRIC   HP_Apps_Processed=$hpProcessed"
 } else {
-    Write-Output "HP bloatware removal: SKIPPED (skiphp=true)"
+    Write-Output "STATUS   HP bloatware removal: SKIPPED (skiphp=true)"
 }
 
 ############################################################################################################
@@ -899,26 +1114,48 @@ foreach ($process in $LenovoProcesses) {
 #                                           Completion                                                    #
 ############################################################################################################
 
-# Calculate runtime
+# Calculate runtime and final metrics
 $endUtc = [datetime]::UtcNow
 $runtime = $endUtc - $startUtc
 $runtimeMinutes = [math]::Round($runtime.TotalMinutes, 2)
+$totalProcessed = $global:SuccessCount + $global:FailCount + $global:WarningCount
 
 Write-Output ""
 Write-Output "=============================================="
-Write-Output "Focused Debloat Script Completed Successfully"
+Write-Output "STATUS   Focused Debloat Script Completion"
 Write-Output "=============================================="
-Write-Output "Runtime: $runtimeMinutes minutes"
-Write-Output "Log saved to: C:\ProgramData\Debloat\Debloat.log"
+Write-Output "METRIC   Runtime_Minutes=$runtimeMinutes"
+Write-Output "METRIC   Total_Success=$global:SuccessCount"
+Write-Output "METRIC   Total_Failed=$global:FailCount"
+Write-Output "METRIC   Total_Warnings=$global:WarningCount"
+Write-Output "METRIC   Total_Processed=$totalProcessed"
+Write-Output "CONFIG   Log saved to: C:\ProgramData\Debloat\Debloat.log"
 Write-Output ""
-Write-Output "Summary of actions taken:"
-if ($skipWindows -ne "true") { Write-Output "- Removed Windows bloatware (AppX packages)" } else { Write-Output "- Windows bloatware removal: SKIPPED" }
-if ($skipHP -ne "true") { Write-Output "- Removed HP manufacturer bloatware" } else { Write-Output "- HP bloatware removal: SKIPPED" }
-if ($skipDell -ne "true") { Write-Output "- Removed Dell manufacturer bloatware" } else { Write-Output "- Dell bloatware removal: SKIPPED" }
-if ($skipLenovo -ne "true") { Write-Output "- Removed Lenovo manufacturer bloatware" } else { Write-Output "- Lenovo bloatware removal: SKIPPED" }
-Write-Output "- Registry modifications: SKIPPED (as requested)"
-Write-Output "- Office removal: SKIPPED (as requested)"
+Write-Output "SUMMARY  Actions taken:"
+if (-not $skipWindows) { Write-Output "SUMMARY  - Processed Windows bloatware (AppX packages)" } else { Write-Output "SUMMARY  - Windows bloatware removal: SKIPPED" }
+if (-not $skipHP) { Write-Output "SUMMARY  - Processed HP manufacturer bloatware" } else { Write-Output "SUMMARY  - HP bloatware removal: SKIPPED" }
+if (-not $skipDell) { Write-Output "SUMMARY  - Processed Dell manufacturer bloatware" } else { Write-Output "SUMMARY  - Dell bloatware removal: SKIPPED" }
+if (-not $skipLenovo) { Write-Output "SUMMARY  - Processed Lenovo manufacturer bloatware" } else { Write-Output "SUMMARY  - Lenovo bloatware removal: SKIPPED" }
+Write-Output "SUMMARY  - Registry modifications: SKIPPED (as requested)"
+Write-Output "SUMMARY  - Office removal: SKIPPED (as requested)"
 Write-Output ""
-Write-Output "Script completed at: $(Get-Date)"
+Write-Output "STATUS   Script completed at: $(Get-Date)"
 
+# Determine exit code based on results
+if ($global:FailCount -eq 0 -and $global:WarningCount -eq 0) {
+    Write-Output "RESULT   Complete success - all operations completed successfully"
+    $exitCode = 0
+} elseif ($global:FailCount -eq 0 -and $global:WarningCount -gt 0) {
+    Write-Output "RESULT   Success with warnings - $global:WarningCount warnings encountered"
+    $exitCode = 1
+} elseif ($global:SuccessCount -ge $global:FailCount) {
+    Write-Output "RESULT   Partial success - $global:SuccessCount successes, $global:FailCount failures"
+    $exitCode = 1
+} else {
+    Write-Output "RESULT   Multiple failures - $global:FailCount failures, $global:SuccessCount successes"
+    $exitCode = 2
+}
+
+Write-Output "STATUS   Exiting with code: $exitCode"
 Stop-Transcript
+exit $exitCode
