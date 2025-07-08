@@ -13,7 +13,7 @@ Write-Host "Starting ScanSnap Home Install/Update process..."
 # Function to check if ScanSnap Home is installed
 function Test-ScanSnapHomeInstalled {
     $ScanSnapHome = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like "*ScanSnap Home*" }
-    return $ScanSnapHome -ne $null
+    return $null -ne $ScanSnapHome
 }
 
 # Function to install ScanSnap Home from bundled installer
@@ -34,6 +34,11 @@ function Install-ScanSnapHome {
         # Run the installer to extract files
         Write-Host "Extracting installer files..."
         $Process = Start-Process -FilePath $Installer.FullName -Wait -PassThru
+
+        if ($Process.ExitCode -ne 0) {
+            Write-Error "Installer extraction failed with exit code: $($Process.ExitCode)"
+            return $false
+        }
         
         # The installer extracts to %LocalAppData%\Temp\SSHomeDownloadInstaller
         $ExtractedPath = "$env:LOCALAPPDATA\Temp\SSHomeDownloadInstaller"
