@@ -59,6 +59,48 @@ Write-Output "- Skip HP bloat: $skipHP"
 Write-Output "- Skip Dell bloat: $skipDell"
 Write-Output "- Skip Lenovo bloat: $skipLenovo"
 
+# Detect manufacturer to optimize bloatware removal
+Write-Output ""
+Write-Output "Detecting system manufacturer..."
+$manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
+Write-Output "Detected manufacturer: $manufacturer"
+
+# Determine which manufacturer bloatware to remove based on detection
+$detectedHP = $manufacturer -match "HP|Hewlett"
+$detectedDell = $manufacturer -match "Dell"
+$detectedLenovo = $manufacturer -match "Lenovo"
+
+Write-Output ""
+Write-Output "Manufacturer Detection Results:"
+Write-Output "- HP detected: $detectedHP"
+Write-Output "- Dell detected: $detectedDell"
+Write-Output "- Lenovo detected: $detectedLenovo"
+
+# Override skip flags based on manufacturer detection (unless explicitly set to skip)
+if ($detectedHP -and $skipHP -ne "true") {
+    $skipHP = "false"
+    Write-Output "- Will process HP bloatware (manufacturer detected)"
+} elseif (-not $detectedHP -and $skipHP -ne "true") {
+    $skipHP = "true"
+    Write-Output "- Will skip HP bloatware (not HP manufacturer)"
+}
+
+if ($detectedDell -and $skipDell -ne "true") {
+    $skipDell = "false"
+    Write-Output "- Will process Dell bloatware (manufacturer detected)"
+} elseif (-not $detectedDell -and $skipDell -ne "true") {
+    $skipDell = "true"
+    Write-Output "- Will skip Dell bloatware (not Dell manufacturer)"
+}
+
+if ($detectedLenovo -and $skipLenovo -ne "true") {
+    $skipLenovo = "false"
+    Write-Output "- Will process Lenovo bloatware (manufacturer detected)"
+} elseif (-not $detectedLenovo -and $skipLenovo -ne "true") {
+    $skipLenovo = "true"
+    Write-Output "- Will skip Lenovo bloatware (not Lenovo manufacturer)"
+}
+
 # Admin check removed - Datto RMM runs with admin privileges automatically
 
 #Get the Current start time in UTC format
@@ -486,6 +528,7 @@ $HPWin32Apps = @(
     "HP Audio Control"
     "HP Connection Optimizer"
     "HP Documentation"
+    "HP One Agent"
     "HP JumpStart Bridge"
     "HP JumpStart Launch"
     "HP My Display"
@@ -520,6 +563,7 @@ $HPWin32Apps = @(
     "HP Wolf Pro Security"
     "HP Wolf Enterprise Security"
     "HP Wolf Security Application Support"
+    "HP Wolf Security - Console"
     "HP Client Security Manager"
     "HP Device Access Manager"
     "HP Hotkey UWP Service"
@@ -532,6 +576,7 @@ $HPWin32Apps = @(
     "HP Touchpoint Analytics Client"
     "HP Velocity"
     "HP Wolf Security"
+    "HP Wolf Security - Console"
     "HP Wolf Security Application Support"
     "HP ZBook Create G7 Notebook PC"
     "HP ZBook Firefly 14 G7 Mobile Workstation"
