@@ -1,7 +1,72 @@
-#Requires -RunAsAdministrator
+<#
+.SYNOPSIS
+    Installs or updates ScanSnap Home software using bundled installer files.
 
-# Script: Install or Update ScanSnap Home (Bundled Installer)
-# Description: Installs ScanSnap Home from bundled installer file
+.DESCRIPTION
+    This Datto RMM installation script automates the deployment and updating of Fujitsu ScanSnap Home software.
+    The script detects if ScanSnap Home is already installed and either performs a fresh installation or
+    runs the update process accordingly. It handles prerequisite installation (Visual C++ redistributables)
+    and uses silent installation methods suitable for automated deployment.
+
+    Script Type: Installation Script (Applications/Deployment)
+    Execution Pattern: One-time or occasional deployment
+    Performance Requirements: Up to 30 minutes execution time allowed
+
+.PARAMETER None
+    This script does not accept parameters. All configuration is handled internally.
+
+.INPUTS
+    None. This script does not accept pipeline input.
+
+.OUTPUTS
+    System.String
+    Progress messages and status information are written to the console and log files.
+
+.EXAMPLE
+    .\Scansnap.ps1
+
+    Executes the script to install or update ScanSnap Home. The script will:
+    - Check if ScanSnap Home is currently installed
+    - If not installed: Extract and install from bundled installer
+    - If installed: Run the update process
+    - Log all activities to ProgramData\ScanSnap\InstallUpdate\
+
+.NOTES
+    File Name      : Scansnap.ps1
+    Author         : Datto RMM Script
+    Prerequisite   : PowerShell 5.0+, Administrator privileges
+    Script Type    : Installation/Deployment
+
+    Datto RMM Context:
+    - Runs as NT AUTHORITY\SYSTEM
+    - Bundled installer files must be included in the component
+    - No GUI elements will be visible during execution
+    - Automatic logging to ProgramData directory
+
+    Exit Codes:
+    - 0: Success (installation or update completed)
+    - 1: Warning (update process encountered issues)
+    - 3: Error (script execution failed)
+
+.LINK
+    https://www.fujitsu.com/global/products/computing/peripheral/scanners/scansnap/
+
+.COMPONENT
+    ScanSnap Home Software Deployment
+
+.ROLE
+    Software Installation and Management
+
+.FUNCTIONALITY
+    - Detects existing ScanSnap Home installation
+    - Extracts bundled installer files
+    - Installs Visual C++ prerequisites
+    - Performs silent installation of ScanSnap Home
+    - Executes update process for existing installations
+    - Comprehensive logging and error handling
+#>
+
+#Requires -RunAsAdministrator
 
 # Initialize logging
 $LogPath = "$env:ProgramData\ScanSnap\InstallUpdate"
