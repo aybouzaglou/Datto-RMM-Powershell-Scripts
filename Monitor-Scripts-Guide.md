@@ -14,21 +14,47 @@ This guide provides specific guidance for **Monitor Scripts** in Datto RMM - scr
 ## Critical Performance Rules
 
 - ⚠️ **NEVER** use `Get-WmiObject -Class Win32_Product` (causes MSI repair)
+- ⚠️ **NEVER** use `Get-CimInstance -ClassName Win32_Product` (causes MSI repair)
 - ⚠️ **NEVER** use long-running processes without timeouts
-- ⚠️ **ALWAYS** prefer registry-based detection over WMI
+- ⚠️ **ALWAYS** prefer registry-based detection over WMI/CIM
 - ⚠️ **ALWAYS** use timeouts for ANY potentially slow operations
 
 ## Allowed Operations
 
 - ✅ Registry-based detection (PREFERRED)
-- ✅ `Get-CimInstance` with caution and timeout
+- ✅ `Get-CimInstance` for non-Product classes (with timeout)
 - ✅ Fast service checks
 - ✅ File existence checks
 - ✅ Quick performance counter reads
 
+## CIM/WMI Usage Examples
+
+✅ **ALLOWED (with timeout):**
+
+```powershell
+# System information
+$system = Get-CimInstance -ClassName Win32_ComputerSystem
+$manufacturer = $system.Manufacturer
+
+# Service status
+$service = Get-CimInstance -ClassName Win32_Service -Filter "Name='Spooler'"
+
+# Disk space
+$disk = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'"
+```
+
+❌ **BANNED:**
+
+```powershell
+# Never use Win32_Product - triggers MSI repair
+Get-CimInstance -ClassName Win32_Product
+Get-WmiObject -Class Win32_Product
+```
+
 ## Monitor Output Format
 
 Monitors must output in specific format:
+
 - `OK: [message]` - Normal status
 - `WARNING: [message]` - Warning condition
 - `CRITICAL: [message]` - Critical issue
@@ -152,22 +178,26 @@ if ($Software) {
 ## Universal Requirements for Monitor Scripts
 
 ### LocalSystem Context
+
 - All scripts run as NT AUTHORITY\SYSTEM
 - No access to network drives (use UNC paths)
 - No GUI elements will be visible
 - Limited network access in some environments
 
 ### Input Variables
+
 - All input variables are strings (even booleans)
 - Access via `$env:VariableName`
 - Boolean check: `$env:BoolVar -eq 'true'`
 
 ### Exit Codes (Monitor-Specific)
+
 - **0**: Success (OK status)
 - **30**: Monitor critical
 - **31**: Monitor warning
 
 ### Event Logging
+
 ```powershell
 # Standard event logging
 Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40000 -Message "Success message"  # Success
@@ -177,7 +207,7 @@ Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40002 -M
 
 ## Key Restrictions
 
-- **NEVER** use banned operations (Win32_Product, etc.)
+- **NEVER** use banned operations (Win32_Product with any cmdlet, etc.)
 - **ALWAYS** complete within 3 seconds
 - **MUST** use proper output format (OK:/WARNING:/CRITICAL:)
 - **MUST** use standardized exit codes

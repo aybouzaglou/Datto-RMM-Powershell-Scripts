@@ -38,11 +38,33 @@ This repository contains comprehensive guides for the three distinct types of Da
 | Operation | Monitor | Installation | Removal |
 |-----------|---------|-------------|---------|
 | `Get-WmiObject Win32_Product` | ❌ NEVER | ❌ NEVER | ❌ NEVER |
-| `Get-CimInstance Win32_Product` | ⚠️ With timeout | ✅ OK | ✅ OK |
+| `Get-CimInstance Win32_Product` | ❌ NEVER | ❌ NEVER | ❌ NEVER |
+| `Get-CimInstance` (other classes) | ⚠️ Add timeout | ✅ OK | ✅ OK |
 | `Start-Process -Wait` (known) | ❌ Too slow | ✅ OK | ✅ OK |
 | `Start-Process -Wait` (unknown) | ❌ Too slow | ⚠️ Add timeout | ⚠️ Add timeout |
-| Registry detection | ✅ PREFERRED | ✅ Good | ✅ Good |
+| Registry detection | ✅ PREFERRED | ✅ PREFERRED | ✅ PREFERRED |
 | Network operations | ⚠️ Add timeout | ✅ OK | ✅ OK |
+
+## CIM/WMI Usage Rules
+
+✅ **ALLOWED:**
+
+```powershell
+Get-CimInstance -ClassName Win32_ComputerSystem    # System info
+Get-CimInstance -ClassName Win32_OperatingSystem   # OS details
+Get-CimInstance -ClassName Win32_Service           # Service info
+Get-CimInstance -ClassName Win32_LogicalDisk       # Disk info
+Get-CimInstance -ClassName Win32_Process           # Process info
+```
+
+❌ **BANNED:**
+
+```powershell
+Get-CimInstance -ClassName Win32_Product           # Triggers MSI repair
+Get-WmiObject -Class Win32_Product                 # Triggers MSI repair
+```
+
+> **⚠️ Why Win32_Product is banned:** Both `Get-WmiObject` and `Get-CimInstance` accessing the `Win32_Product` WMI class can trigger MSI repair operations, causing system instability, performance issues, and script failures. Always use registry-based detection for software detection instead.
 
 ## Universal Requirements (All Script Types)
 

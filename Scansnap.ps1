@@ -77,8 +77,27 @@ Write-Host "Starting ScanSnap Home Install/Update process..."
 
 # Function to check if ScanSnap Home is installed
 function Test-ScanSnapHomeInstalled {
-    $ScanSnapHome = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like "*ScanSnap Home*" }
-    return $null -ne $ScanSnapHome
+    # Use fast registry-based detection instead of Win32_Product (which causes MSI repair)
+    $RegPaths = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+
+    foreach ($Path in $RegPaths) {
+        try {
+            $Software = Get-ItemProperty $Path -ErrorAction SilentlyContinue |
+                       Where-Object { $_.DisplayName -like "*ScanSnap Home*" }
+
+            if ($Software) {
+                Write-Host "Found ScanSnap Home: $($Software.DisplayName) - Version: $($Software.DisplayVersion)"
+                return $true
+            }
+        } catch {
+            continue
+        }
+    }
+
+    return $false
 }
 
 # Function to install ScanSnap Home from bundled installer
@@ -96,9 +115,16 @@ function Install-ScanSnapHome {
     try {
         Write-Host "Found installer: $($Installer.Name)"
         
-        # Run the installer to extract files
+        # Run the installer to extract files with timeout protection
         Write-Host "Extracting installer files..."
-        $Process = Start-Process -FilePath $Installer.FullName -Wait -PassThru
+        $Process = Start-Process -FilePath $Installer.FullName -PassThru -NoNewWindow
+
+        # Wait for extraction with 10 minute timeout
+        if (-not $Process.WaitForExit(600000)) {  # 10 minutes in milliseconds
+            $Process.Kill()
+            Write-Error "Installer extraction timed out after 10 minutes"
+            return $false
+        }
 
         if ($Process.ExitCode -ne 0) {
             Write-Error "Installer extraction failed with exit code: $($Process.ExitCode)"
@@ -111,16 +137,24 @@ function Install-ScanSnapHome {
         if (Test-Path $ExtractedPath) {
             Write-Host "Files extracted successfully"
             
-            # Install prerequisites first
+            # Install prerequisites first with timeout protection
             $PrereqPath = "$ExtractedPath\Prerequisite"
             if (Test-Path "$PrereqPath\ms_vcredist_x86_2013\vcredist_x86.exe") {
                 Write-Host "Installing VC++ 2013 x86..."
-                Start-Process -FilePath "$PrereqPath\ms_vcredist_x86_2013\vcredist_x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
+                $VCProcess = Start-Process -FilePath "$PrereqPath\ms_vcredist_x86_2013\vcredist_x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -PassThru -NoNewWindow
+                if (-not $VCProcess.WaitForExit(300000)) {  # 5 minutes timeout
+                    $VCProcess.Kill()
+                    Write-Warning "VC++ 2013 installation timed out"
+                }
             }
-            
+
             if (Test-Path "$PrereqPath\ms_vcredist_x86_2017\vcredist_x86.exe") {
                 Write-Host "Installing VC++ 2017 x86..."
-                Start-Process -FilePath "$PrereqPath\ms_vcredist_x86_2017\vcredist_x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
+                $VCProcess = Start-Process -FilePath "$PrereqPath\ms_vcredist_x86_2017\vcredist_x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -PassThru -NoNewWindow
+                if (-not $VCProcess.WaitForExit(300000)) {  # 5 minutes timeout
+                    $VCProcess.Kill()
+                    Write-Warning "VC++ 2017 installation timed out"
+                }
             }
             
             # Install main application
@@ -134,10 +168,21 @@ function Install-ScanSnapHome {
                     "-f1`"$($ResponseFile.FullName)`""
                     "-f2`"$LogPath\ScanSnapHome-Install.log`""
                 )
-                
-                Start-Process -FilePath $MainInstaller.FullName -ArgumentList $InstallArgs -Wait
-                Write-Host "ScanSnap Home installation completed"
-                return $true
+
+                $MainProcess = Start-Process -FilePath $MainInstaller.FullName -ArgumentList $InstallArgs -PassThru -NoNewWindow
+                if (-not $MainProcess.WaitForExit(1800000)) {  # 30 minutes timeout
+                    $MainProcess.Kill()
+                    Write-Error "ScanSnap Home installation timed out after 30 minutes"
+                    return $false
+                }
+
+                if ($MainProcess.ExitCode -eq 0) {
+                    Write-Host "ScanSnap Home installation completed successfully"
+                    return $true
+                } else {
+                    Write-Error "ScanSnap Home installation failed with exit code: $($MainProcess.ExitCode)"
+                    return $false
+                }
             }
         }
         
@@ -162,8 +207,14 @@ function Update-ScanSnapHome {
         
         if (Test-Path $OnlineUpdatePath) {
             Write-Host "Running ScanSnap Online Update..."
-            Start-Process -FilePath $OnlineUpdatePath -Wait
-            Write-Host "Update process completed"
+            $UpdateProcess = Start-Process -FilePath $OnlineUpdatePath -PassThru -NoNewWindow
+            if (-not $UpdateProcess.WaitForExit(1200000)) {  # 20 minutes timeout
+                $UpdateProcess.Kill()
+                Write-Warning "ScanSnap Online Update timed out after 20 minutes"
+                return $false
+            }
+
+            Write-Host "Update process completed with exit code: $($UpdateProcess.ExitCode)"
             return $true
         }
         

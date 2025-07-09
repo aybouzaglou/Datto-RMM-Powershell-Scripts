@@ -15,10 +15,37 @@ This guide provides specific guidance for **Installation Scripts** in Datto RMM 
 
 - ✅ `Start-Process -Wait` with known installers/MSIs
 - ✅ Network operations for reliable sources
-- ✅ CIM operations for software management
+- ✅ CIM operations (EXCEPT Win32_Product - use registry instead)
 - ✅ File downloads with explicit timeouts
 - ✅ Registry modifications and system configuration
 - ✅ Service installation and configuration
+
+## CIM/WMI Usage Examples
+
+✅ **ALLOWED:**
+
+```powershell
+# System information for installation decisions
+$system = Get-CimInstance -ClassName Win32_ComputerSystem
+$manufacturer = $system.Manufacturer
+$model = $system.Model
+
+# OS version for compatibility checks
+$os = Get-CimInstance -ClassName Win32_OperatingSystem
+$osVersion = $os.Version
+
+# Disk space before installation
+$disk = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'"
+$freeSpace = $disk.FreeSpace
+```
+
+❌ **BANNED:**
+
+```powershell
+# Never use Win32_Product - use registry detection instead
+Get-CimInstance -ClassName Win32_Product
+Get-WmiObject -Class Win32_Product
+```
 
 ## Best Practices Template
 
@@ -74,17 +101,20 @@ try {
 ## Universal Requirements for Installation Scripts
 
 ### LocalSystem Context
+
 - All scripts run as NT AUTHORITY\SYSTEM
 - No access to network drives (use UNC paths)
 - No GUI elements will be visible
 - Limited network access in some environments
 
 ### Input Variables
+
 - All input variables are strings (even booleans)
 - Access via `$env:VariableName`
 - Boolean check: `$env:BoolVar -eq 'true'`
 
 ### Exit Codes
+
 - **0**: Success
 - **1**: Success with warnings
 - **2**: Partial success
@@ -93,6 +123,7 @@ try {
 - **12**: Configuration error
 
 ### Event Logging
+
 ```powershell
 # Standard event logging
 Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40000 -Message "Success message"  # Success
@@ -101,6 +132,7 @@ Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40002 -M
 ```
 
 ### Security Requirements
+
 - Set TLS 1.2: `[Net.ServicePointManager]::SecurityProtocol = 3072`
 - Verify SHA-256 hashes for downloads
 - Use digital signature verification when possible

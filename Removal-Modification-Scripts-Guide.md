@@ -19,6 +19,36 @@ This guide provides specific guidance for **Removal/Modification Scripts** in Da
 - ✅ Service management (stop/start/modify)
 - ✅ Process monitoring for critical repairs
 - ✅ Configuration file modifications
+- ✅ CIM operations (EXCEPT Win32_Product - use registry instead)
+
+## CIM/WMI Usage Examples
+
+✅ **ALLOWED:**
+
+```powershell
+# Service management during removal
+$service = Get-CimInstance -ClassName Win32_Service -Filter "Name='ServiceName'"
+if ($service) {
+    Stop-Service -Name $service.Name -Force
+}
+
+# Process monitoring during cleanup
+$processes = Get-CimInstance -ClassName Win32_Process -Filter "Name='app.exe'"
+foreach ($proc in $processes) {
+    $proc | Invoke-CimMethod -MethodName Terminate
+}
+
+# System info for removal decisions
+$system = Get-CimInstance -ClassName Win32_ComputerSystem
+```
+
+❌ **BANNED:**
+
+```powershell
+# Never use Win32_Product - use registry detection instead
+Get-CimInstance -ClassName Win32_Product
+Get-WmiObject -Class Win32_Product
+```
 
 ## Best Practices Template
 
