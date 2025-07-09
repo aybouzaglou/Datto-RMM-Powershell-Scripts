@@ -7,21 +7,27 @@ This repository contains comprehensive guides for the three distinct types of Da
 ## Script Type Guides
 
 ### 📦 [Installation Scripts Guide](Installation-Scripts-Guide.md)
+
 **Purpose**: Installing software, deploying applications, initial system configuration
+
 - **Execution Pattern**: One-time or occasional deployment
 - **Component Category**: Applications
 - **Performance**: More flexible - can run longer processes (up to 30 minutes)
 - **Focus**: Reliability and error handling
 
 ### 🔍 [Monitor Scripts Guide](Monitor-Scripts-Guide.md)
+
 **Purpose**: Checking system status, monitoring services, detecting issues
+
 - **Execution Pattern**: Frequent/continuous (every few minutes)
 - **Component Category**: Monitors
 - **Performance**: CRITICAL - Must complete in under 3 seconds
 - **Focus**: Speed and proper output format
 
 ### 🗑️ [Removal/Modification Scripts Guide](Removal-Modification-Scripts-Guide.md)
+
 **Purpose**: Uninstalling software, modifying configurations, system cleanup
+
 - **Execution Pattern**: As-needed or periodic remediation
 - **Component Category**: Applications or Scripts
 - **Performance**: Balanced approach - timeouts recommended
@@ -41,17 +47,20 @@ This repository contains comprehensive guides for the three distinct types of Da
 ## Universal Requirements (All Script Types)
 
 ### LocalSystem Context
+
 - All scripts run as NT AUTHORITY\SYSTEM
 - No access to network drives (use UNC paths)
 - No GUI elements will be visible
 - Limited network access in some environments
 
 ### Input Variables
+
 - All input variables are strings (even booleans)
 - Access via `$env:VariableName`
 - Boolean check: `$env:BoolVar -eq 'true'`
 
 ### Standard Exit Codes
+
 - **0**: Success
 - **1**: Success with warnings
 - **2**: Partial success
@@ -62,6 +71,7 @@ This repository contains comprehensive guides for the three distinct types of Da
 - **31**: Monitor warning
 
 ### Event Logging Template
+
 ```powershell
 # Standard event logging
 Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40000 -Message "Success message"  # Success
@@ -70,6 +80,7 @@ Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40002 -M
 ```
 
 ### Security Requirements
+
 - Set TLS 1.2: `[Net.ServicePointManager]::SecurityProtocol = 3072`
 - Verify SHA-256 hashes for downloads
 - Use digital signature verification when possible
@@ -77,12 +88,14 @@ Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40002 -M
 ## Quick Selection Guide
 
 **Choose Installation Scripts when:**
+
 - Deploying new software
 - Configuring systems for the first time
 - Setting up services or applications
 - Need longer execution times (up to 30 minutes)
 
 **Choose Monitor Scripts when:**
+
 - Checking system health
 - Monitoring service status
 - Detecting configuration drift
@@ -90,6 +103,7 @@ Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40002 -M
 - Require specific output format (OK:/WARNING:/CRITICAL:)
 
 **Choose Removal/Modification Scripts when:**
+
 - Uninstalling software
 - Cleaning up system configurations
 - Modifying existing settings
@@ -97,7 +111,7 @@ Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40002 -M
 
 ## Repository Structure
 
-```
+```text
 ├── Installation-Scripts-Guide.md      # Software deployment & configuration
 ├── Monitor-Scripts-Guide.md           # System monitoring & health checks
 ├── Removal-Modification-Scripts-Guide.md  # Software removal & cleanup

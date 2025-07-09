@@ -127,17 +127,20 @@ try {
 ## Universal Requirements for Removal/Modification Scripts
 
 ### LocalSystem Context
+
 - All scripts run as NT AUTHORITY\SYSTEM
 - No access to network drives (use UNC paths)
 - No GUI elements will be visible
 - Limited network access in some environments
 
 ### Input Variables
+
 - All input variables are strings (even booleans)
 - Access via `$env:VariableName`
 - Boolean check: `$env:BoolVar -eq 'true'`
 
 ### Exit Codes
+
 - **0**: Success
 - **1**: Success with warnings
 - **2**: Partial success
@@ -146,6 +149,7 @@ try {
 - **12**: Configuration error
 
 ### Event Logging
+
 ```powershell
 # Standard event logging
 Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40000 -Message "Success message"  # Success
@@ -154,6 +158,7 @@ Write-EventLog -LogName Application -Source "Datto-RMM-Script" -EventId 40002 -M
 ```
 
 ### Security Requirements
+
 - Set TLS 1.2: `[Net.ServicePointManager]::SecurityProtocol = 3072`
 - Verify SHA-256 hashes for downloads
 - Use digital signature verification when possible
