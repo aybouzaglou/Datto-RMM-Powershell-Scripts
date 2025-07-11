@@ -73,6 +73,18 @@ $LogPath = "$env:ProgramData\ScanSnap\InstallUpdate"
 If (-Not (Test-Path $LogPath)) { New-Item -Path $LogPath -ItemType Directory -Force }
 Start-Transcript -Path "$LogPath\ScanSnapHome-InstallUpdate.log" -Append
 
+# Pre-execution cleanup
+$ProcessesToKill = @("WinSSHOfflineInstaller*", "SSHomeDownloadInstaller*", "WinSSHomeInstaller*", "SSUpdate")
+foreach ($ProcessName in $ProcessesToKill) {
+    Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Stop-Process -Force
+}
+$TempPaths = @("$env:LOCALAPPDATA\Temp\SSHomeDownloadInstaller", "$env:TEMP\ScanSnapInstall")
+foreach ($Path in $TempPaths) {
+    if (Test-Path $Path) {
+        Remove-Item -Path $Path -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
 Write-Host "Starting ScanSnap Home Install/Update process..."
 
 # Function to check if ScanSnap Home is installed
@@ -114,16 +126,42 @@ function Install-ScanSnapHome {
     
     try {
         Write-Host "Found installer: $($Installer.Name)"
-        
+
+        # Check if file is locked
+        $MaxAttempts = 30
+        $AttemptCount = 0
+        while ((Test-FileLocked $Installer.FullName) -and $AttemptCount -lt $MaxAttempts) {
+            Write-Host "File is locked, waiting... (Attempt $AttemptCount/$MaxAttempts)"
+            Start-Sleep -Seconds 2
+            $AttemptCount++
+        }
+
+        if ($AttemptCount -ge $MaxAttempts) {
+            Write-Error "File is locked, unable to proceed"
+            return $false
+        }
+
         # Run the installer to extract files with timeout protection
         Write-Host "Extracting installer files..."
         $Process = Start-Process -FilePath $Installer.FullName -PassThru -NoNewWindow
 
-        # Wait for extraction with 10 minute timeout
-        if (-not $Process.WaitForExit(600000)) {  # 10 minutes in milliseconds
+        # Monitor process
+        $TimeoutMinutes = 10
+        $ElapsedTime = 0
+        $CheckInterval = 30
+        while (!$Process.HasExited -and $ElapsedTime -lt ($TimeoutMinutes * 60)) {
+            Start-Sleep -Seconds $CheckInterval
+            $ElapsedTime += $CheckInterval
+            if ($Process.Responding -eq $false) {
+                Write-Warning "Process not responding, terminating..."
+                $Process.Kill()
+                break
+            }
+        }
+
+        if (!$Process.HasExited) {
             $Process.Kill()
-            Write-Error "Installer extraction timed out after 10 minutes"
-            return $false
+            Start-Sleep -Seconds 5
         }
 
         if ($Process.ExitCode -ne 0) {
@@ -258,9 +296,17 @@ try {
 catch {
     Write-Error "Script execution failed: $($_.Exception.Message)"
     $ExitCode = 3
+    # Ensure cleanup on error
+    Get-Process -Name "WinSSH*" -ErrorAction SilentlyContinue | Stop-Process -Force
+
 }
 finally {
     Stop-Transcript
+    # Cleanup
+    $CleanupPath = "$env:LOCALAPPDATA\Temp\SSHomeDownloadInstaller"
+    if (Test-Path $CleanupPath) {
+        Remove-Item -Path $CleanupPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
     Write-Host "Script completed with exit code: $ExitCode"
     Exit $ExitCode
 }
