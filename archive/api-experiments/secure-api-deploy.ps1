@@ -176,12 +176,9 @@ try {
         ApiSecret = $config.datto.apiSecret
         TestDeviceId = $config.datto.testDeviceId
     }
-    
-    # Add optional parameters if they exist in config
-    if ($config.datto.apiUrl) {
-        $deployParams.ApiUrl = $config.datto.apiUrl
-    }
-    
+
+    # Note: quick-api-deploy.ps1 has ApiUrl hardcoded, so we don't pass it as parameter
+
     # Execute deployment
     $scriptPath = Join-Path (Split-Path $MyInvocation.MyCommand.Definition) "quick-api-deploy.ps1"
     & $scriptPath @deployParams

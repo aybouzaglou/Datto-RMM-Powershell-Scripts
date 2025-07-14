@@ -1,0 +1,245 @@
+name: 🔍 Validate PowerShell Scripts
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'components/**/*.ps1'
+      - 'shared-functions/**/*.ps1'
+      - 'launchers/**/*.ps1'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'components/**/*.ps1'
+      - 'shared-functions/**/*.ps1'
+      - 'launchers/**/*.ps1'
+  workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'Test Level'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+        - basic
+        - full
+        - comprehensive
+
+jobs:
+  validate-powershell:
+    name: 🔍 PowerShell Validation
+    runs-on: windows-latest
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup PowerShell
+      shell: pwsh
+      run: |
+        Write-Output "PowerShell Version: $($PSVersionTable.PSVersion)"
+        Write-Output "OS: $($PSVersionTable.OS)"
+        
+    - name: 📋 Validate Script Syntax
+      shell: pwsh
+      run: |
+        Write-Output "=== PowerShell Syntax Validation ==="
+        $errors = 0
+        $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object { 
+          $_.FullName -notlike "*\.git\*" -and 
+          $_.FullName -notlike "*\legacy\*" 
+        }
+        
+        foreach ($script in $scripts) {
+          Write-Output "Checking: $($script.Name)"
+          try {
+            $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script.FullName -Raw), [ref]$null)
+            Write-Output "  ✅ Syntax OK"
+          } catch {
+            Write-Output "  ❌ Syntax Error: $($_.Exception.Message)"
+            $errors++
+          }
+        }
+        
+        if ($errors -gt 0) {
+          Write-Error "Found $errors syntax errors"
+          exit 1
+        }
+        Write-Output "✅ All scripts have valid syntax"
+        
+    - name: 🏗️ Test Shared Functions
+      shell: pwsh
+      run: |
+        Write-Output "=== Testing Shared Functions ==="
+        
+        # Test if shared functions can be imported
+        $functionFiles = Get-ChildItem -Path "shared-functions" -Filter "*.ps1" -ErrorAction SilentlyContinue
+        
+        foreach ($file in $functionFiles) {
+          Write-Output "Testing import: $($file.Name)"
+          try {
+            . $file.FullName
+            Write-Output "  ✅ Import successful"
+          } catch {
+            Write-Output "  ❌ Import failed: $($_.Exception.Message)"
+            exit 1
+          }
+        }
+        
+    - name: 🎯 Validate Component Categories
+      shell: pwsh
+      run: |
+        Write-Output "=== Validating Component Categories ==="
+        
+        $categories = @("Applications", "Monitors", "Scripts")
+        $errors = 0
+        
+        foreach ($category in $categories) {
+          $categoryPath = "components/$category"
+          if (Test-Path $categoryPath) {
+            Write-Output "Checking category: $category"
+            $scripts = Get-ChildItem -Path $categoryPath -Filter "*.ps1" -Recurse
+            
+            foreach ($script in $scripts) {
+              Write-Output "  Validating: $($script.Name)"
+              
+              # Check for Monitor-specific requirements
+              if ($category -eq "Monitors") {
+                $content = Get-Content $script.FullName -Raw
+                if ($content -notmatch '<-Start Result->' -or $content -notmatch '<-End Result->') {
+                  Write-Output "    ❌ Monitor missing result markers"
+                  $errors++
+                } else {
+                  Write-Output "    ✅ Monitor has required result markers"
+                }
+              }
+              
+              # Check for proper exit codes
+              $content = Get-Content $script.FullName -Raw
+              if ($content -match 'exit \d+') {
+                Write-Output "    ✅ Has exit codes"
+              } else {
+                Write-Output "    ⚠️  No explicit exit codes found"
+              }
+            }
+          }
+        }
+        
+        if ($errors -gt 0) {
+          Write-Error "Found $errors validation errors"
+          exit 1
+        }
+        
+    - name: 🚀 Test Launchers
+      shell: pwsh
+      run: |
+        Write-Output "=== Testing Launchers ==="
+        
+        $launchers = Get-ChildItem -Path "launchers" -Filter "*.ps1" -ErrorAction SilentlyContinue
+        
+        foreach ($launcher in $launchers) {
+          Write-Output "Testing launcher: $($launcher.Name)"
+          
+          # Test syntax
+          try {
+            $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $launcher.FullName -Raw), [ref]$null)
+            Write-Output "  ✅ Syntax valid"
+          } catch {
+            Write-Output "  ❌ Syntax error: $($_.Exception.Message)"
+            exit 1
+          }
+          
+          # Check for required parameters
+          $content = Get-Content $launcher.FullName -Raw
+          if ($content -match 'param\s*\(') {
+            Write-Output "  ✅ Has parameter block"
+          } else {
+            Write-Output "  ⚠️  No parameter block found"
+          }
+        }
+        
+    - name: 📊 Generate Validation Report
+      shell: pwsh
+      run: |
+        Write-Output "=== Validation Summary ==="
+        
+        $totalScripts = (Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object { 
+          $_.FullName -notlike "*\.git\*" -and 
+          $_.FullName -notlike "*\legacy\*" 
+        }).Count
+        
+        $componentScripts = (Get-ChildItem -Path "components" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue).Count
+        $sharedFunctions = (Get-ChildItem -Path "shared-functions" -Filter "*.ps1" -ErrorAction SilentlyContinue).Count
+        $launchers = (Get-ChildItem -Path "launchers" -Filter "*.ps1" -ErrorAction SilentlyContinue).Count
+        
+        Write-Output "📊 Script Inventory:"
+        Write-Output "  Total Scripts: $totalScripts"
+        Write-Output "  Component Scripts: $componentScripts"
+        Write-Output "  Shared Functions: $sharedFunctions"
+        Write-Output "  Launchers: $launchers"
+        Write-Output ""
+        Write-Output "✅ All validations passed!"
+        Write-Output "🚀 Scripts are ready for manual deployment to Datto RMM"
+        
+    - name: 📦 Create Deployment Package
+      shell: pwsh
+      run: |
+        Write-Output "=== Creating Deployment Package ==="
+        
+        # Create deployment directory
+        New-Item -ItemType Directory -Path "deployment-ready" -Force
+        
+        # Copy validated scripts
+        if (Test-Path "components") {
+          Copy-Item -Path "components" -Destination "deployment-ready/" -Recurse -Force
+        }
+        if (Test-Path "shared-functions") {
+          Copy-Item -Path "shared-functions" -Destination "deployment-ready/" -Recurse -Force
+        }
+        if (Test-Path "launchers") {
+          Copy-Item -Path "launchers" -Destination "deployment-ready/" -Recurse -Force
+        }
+        
+        # Create deployment guide
+        @"
+        # 🚀 Deployment Ready Scripts
+        
+        Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')
+        Commit: ${{ github.sha }}
+        
+        ## ✅ Validation Status
+        - Syntax: PASSED
+        - Structure: PASSED  
+        - Categories: PASSED
+        - Launchers: PASSED
+        
+        ## 📁 Ready for Manual Deployment
+        
+        ### Components (copy to Datto RMM):
+        $(if (Test-Path "components") { (Get-ChildItem -Path "components" -Filter "*.ps1" -Recurse | ForEach-Object { "- $($_.Name)" }) -join "`n" } else { "- No components found" })
+        
+        ### Shared Functions (reference library):
+        $(if (Test-Path "shared-functions") { (Get-ChildItem -Path "shared-functions" -Filter "*.ps1" -Recurse | ForEach-Object { "- $($_.Name)" }) -join "`n" } else { "- No shared functions found" })
+        
+        ### Launchers (universal deployment):
+        $(if (Test-Path "launchers") { (Get-ChildItem -Path "launchers" -Filter "*.ps1" -Recurse | ForEach-Object { "- $($_.Name)" }) -join "`n" } else { "- No launchers found" })
+        
+        ## 🎯 Manual Deployment Steps
+        
+        1. **Copy component scripts** to Datto RMM console
+        2. **Set appropriate category** (Applications/Monitors/Scripts)
+        3. **Configure environment variables** as needed
+        4. **Test on target device** before production use
+        5. **Monitor execution** in RMM console
+        
+        All scripts have been validated and are ready for deployment! 🎉
+        "@ | Out-File -FilePath "deployment-ready/DEPLOYMENT-GUIDE.md" -Encoding UTF8
+        
+        Write-Output "✅ Deployment package created in 'deployment-ready/' directory"
+        
+    - name: 📤 Upload Deployment Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: validated-scripts-${{ github.sha }}
+        path: deployment-ready/
+        retention-days: 30
