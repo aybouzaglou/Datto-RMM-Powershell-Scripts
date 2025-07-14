@@ -1,0 +1,133 @@
+name: Datto RMM Component CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths: ['components/**']
+  pull_request:
+    branches: [main]
+    paths: ['components/**']
+  workflow_dispatch:
+
+env:
+  DATTO_API_URL: https://concord-api.centrastage.net/api
+
+jobs:
+  test:
+    runs-on: windows-latest
+    name: Test PowerShell Components
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup PowerShell
+        uses: actions/setup-powershell@v1
+        
+      - name: Install Required Modules
+        run: |
+          Install-Module -Name Pester -Force -Scope CurrentUser
+          Install-Module -Name powershell-yaml -Force -Scope CurrentUser
+          
+      - name: Run Component Tests
+        run: |
+          ./test-architecture.ps1 -TestPath "components" -Verbose
+          
+      - name: Generate Test Report
+        run: |
+          $TestResults = "./test-results.xml"
+          if (Test-Path $TestResults) {
+            Write-Host "Test results generated successfully"
+          }
+          
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.xml
+          retention-days: 30
+
+  validate:
+    runs-on: windows-latest
+    name: Validate Component Structure
+    needs: test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Validate Component Structure
+        run: |
+          ./scripts/validate-components.ps1 -ComponentPath "components" -Verbose
+
+  deploy-staging:
+    runs-on: windows-latest
+    name: Deploy to Staging Environment
+    needs: [test, validate]
+    if: github.event_name == 'pull_request'
+    environment: staging
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup PowerShell
+        uses: actions/setup-powershell@v1
+        
+      - name: Deploy to Datto RMM Staging
+        run: |
+          ./scripts/deploy-to-datto.ps1 -Environment "staging" -ApiKey "${{ secrets.DATTO_API_KEY_STAGING }}" -Verbose
+        env:
+          DATTO_API_KEY: ${{ secrets.DATTO_API_KEY_STAGING }}
+
+  deploy-production:
+    runs-on: windows-latest
+    name: Deploy to Production Environment
+    needs: [test, validate]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup PowerShell
+        uses: actions/setup-powershell@v1
+        
+      - name: Deploy to Datto RMM Production
+        run: |
+          ./scripts/deploy-to-datto.ps1 -Environment "production" -ApiKey "${{ secrets.DATTO_API_KEY_PRODUCTION }}" -Verbose
+        env:
+          DATTO_API_KEY: ${{ secrets.DATTO_API_KEY_PRODUCTION }}
+          
+      - name: Create Deployment Tag
+        run: |
+          $timestamp = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
+          git tag "deployment-$timestamp"
+          git push origin "deployment-$timestamp"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    runs-on: windows-latest
+    name: Send Notifications
+    needs: [deploy-production]
+    if: always()
+    steps:
+      - name: Send Teams Notification
+        if: success()
+        run: |
+          $webhook = "${{ secrets.TEAMS_WEBHOOK_URL }}"
+          $message = @{
+            text = "✅ Datto RMM Component deployment completed successfully"
+            title = "Deployment Success"
+            themeColor = "00FF00"
+          }
+          Invoke-RestMethod -Uri $webhook -Method Post -Body ($message | ConvertTo-Json) -ContentType "application/json"
+          
+      - name: Send Failure Notification
+        if: failure()
+        run: |
+          $webhook = "${{ secrets.TEAMS_WEBHOOK_URL }}"
+          $message = @{
+            text = "❌ Datto RMM Component deployment failed"
+            title = "Deployment Failed"
+            themeColor = "FF0000"
+          }
+          Invoke-RestMethod -Uri $webhook -Method Post -Body ($message | ConvertTo-Json) -ContentType "application/json"
