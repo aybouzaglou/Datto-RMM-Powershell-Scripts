@@ -1,32 +1,14 @@
 # ===========================================
-# SECURITY: API Credentials and Sensitive Data
+# Development and Build Files
 # ===========================================
 
-# API configuration files (contain sensitive credentials)
-config/api-config.json
-config/api-config.local.json
-config/*.secret.json
-config/*.key
-
-# Environment files with credentials
-.env
-.env.api
-.env.datto
-.env.secrets
-.env.*
-
-# PowerShell credential files
-*.credential
-*.cred
-*.key
-
-# Test results that might contain sensitive data
+# Test results and logs
 test-results/
 TestResults/
 logs/
 *.test.log
 
-# Temporary files that might contain credentials
+# Temporary files
 temp/
 tmp/
 *.tmp
