@@ -1,0 +1,13 @@
+{
+  "datto": {
+    "apiKey": "YOUR-DATTO-API-KEY-HERE",
+    "apiSecret": "YOUR-DATTO-API-SECRET-HERE",
+    "apiUrl": "https://concord-api.centrastage.net/api",
+    "testDeviceId": "YOUR-TEST-DEVICE-ID-HERE"
+  },
+  "settings": {
+    "testResultsPath": "C:\\TestResults",
+    "cleanupOldResults": 7,
+    "defaultTimeout": 600
+  }
+}
