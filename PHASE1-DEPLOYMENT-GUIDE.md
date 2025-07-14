@@ -15,39 +15,43 @@
 - ✅ `TEST-ScanSnapHome.ps1` (Applications category)
 - ✅ `TEST-Setup-TestDevice.ps1` (Scripts category)
 
-## 🚀 **Next Steps: Windows VM Setup**
+## 🚀 **Next Steps: API-Based Automated Deployment**
 
-### **Step 1: Prepare Windows VM in Datto RMM**
+### **Step 1: Set Up Datto RMM API Access**
 
-#### **1.1 Tag Your Windows VM**
+#### **1.1 Generate API Credentials**
 1. **Log into Datto RMM Console**
-2. **Navigate to Devices** → Find your Windows test VM
-3. **Edit Device Settings**:
+2. **Navigate to**: `Settings` → `API` → `API Keys`
+3. **Create New API Key**:
+   - **Name**: `GitHub-CI-CD-Pipeline`
+   - **Permissions**: Component management, Device management, Job execution
+   - **Note the API Key and Secret** (you'll need these for GitHub secrets)
+
+#### **1.2 Identify Your Test Device**
+1. **Find your Windows VM** in Datto RMM
+2. **Note the Device ID** (visible in URL or device details)
+3. **Tag the device** for identification:
    - Add **Custom Field**: `DeviceRole` = `TEST-DEVICE`
-   - Or add **Tag**: `TEST-DEVICE`
-   - **Note the Device ID** (you'll need this for API calls)
+   - Or use device name pattern for API filtering
 
-#### **1.2 Deploy Test Device Setup Script**
-1. **Create New Component** in Datto RMM:
-   - **Type**: Scripts Component
-   - **Name**: `Setup-TestDevice`
-   - **Description**: `Prepare Windows VM for automated component testing`
-
-2. **Copy Script Content**:
-   - Copy the entire content from `components/Scripts/Setup-TestDevice.ps1`
-   - Paste into the Datto RMM component script field
-
-3. **Configure Environment Variables**:
+#### **1.3 Set Up GitHub Secrets**
+1. **Navigate to your GitHub repository**
+2. **Go to**: `Settings` → `Secrets and variables` → `Actions`
+3. **Add Repository Secrets**:
    ```
-   TestResultsPath = C:\TestResults
-   CleanupOldResults = 7
-   Force = false
+   DATTO_API_KEY = your-api-key
+   DATTO_API_SECRET = your-api-secret
+   DATTO_API_URL = https://concord-api.centrastage.net/api
+   TEST_DEVICE_ID = your-windows-vm-device-id
    ```
 
-4. **Deploy to Test Device**:
-   - **Target**: Your Windows test VM only
-   - **Execution**: Run once to set up environment
-   - **Monitor**: Check execution logs for success
+### **Step 2: API-Based Component Deployment**
+
+Instead of manual deployment, we'll use the Datto RMM API to:
+- **Create components** programmatically
+- **Deploy to test device** automatically
+- **Execute and monitor** results
+- **Collect logs** and results
 
 ### **Step 2: Verify Test Environment**
 
