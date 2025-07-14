@@ -67,10 +67,10 @@ validate_component_structure() {
     print_info "Validating component structure for: $filename"
     
     # Check for required comment blocks
-    if grep -q "#.*SYNOPSIS" "$file" && grep -q "#.*DESCRIPTION" "$file"; then
+    if grep -q "\.SYNOPSIS" "$file" && grep -q "\.DESCRIPTION" "$file"; then
         print_success "Documentation blocks found"
     else
-        print_warning "Missing SYNOPSIS or DESCRIPTION comment blocks"
+        print_warning "Missing .SYNOPSIS or .DESCRIPTION comment blocks"
     fi
     
     # Check for param block
