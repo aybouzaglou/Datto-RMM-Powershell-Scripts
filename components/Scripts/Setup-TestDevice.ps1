@@ -1,5 +1,6 @@
 # Setup Test Device Environment
 # This script prepares a Windows VM for automated testing of Datto RMM components
+# GitHub Actions Pipeline Test - Updated 2025-01-14
 
 <#
 .SYNOPSIS
