@@ -2,21 +2,30 @@
 
 This directory contains the original scripts from before the GitHub-based function library architecture was implemented.
 
-## Legacy Scripts
+## Legacy Scripts and Tools
 
-These scripts are preserved for:
+These scripts and tools are preserved for:
 - Backward compatibility
 - Reference purposes
 - Users who prefer traditional approaches
 - Historical context
 
-## Migration Path
+## Contents
+
+### PowerShell Scripts
+- `DattoRMM-FocusedDebloat-Launcher.ps1` - Original launcher for debloat script
+- `FocusedDebloat.ps1` - Original Windows debloat script
+- `Scansnap.ps1` - Original ScanSnap installation script
+- `.netrepair tool.ps1` - .NET Framework repair utility
+
+### Migration Path
 
 For each legacy script, there is now an enhanced version in the new architecture:
 
 - `DattoRMM-FocusedDebloat-Launcher.ps1` → Use `launchers/LaunchScripts.ps1` with `ScriptName="FocusedDebloat.ps1"`
 - `FocusedDebloat.ps1` → Enhanced version at `components/Scripts/FocusedDebloat.ps1`
 - `Scansnap.ps1` → Enhanced version at `components/Applications/ScanSnapHome.ps1`
+- `.netrepair tool.ps1` → Consider creating enhanced version in `components/Scripts/` if needed
 
 ## Recommendation
 

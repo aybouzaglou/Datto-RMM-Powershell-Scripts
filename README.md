@@ -98,18 +98,30 @@ components/
 - **[Component Categories](docs/Datto-RMM-Component-Categories.md)** - Datto RMM category guide
 
 #### Traditional Script Development
-- **[Installation Scripts Guide](Installation-Scripts-Guide.md)** - Software deployment scripts
-- **[Monitor Scripts Guide](Monitor-Scripts-Guide.md)** - Performance-critical monitoring
-- **[Removal/Modification Scripts Guide](Removal-Modification-Scripts-Guide.md)** - Safe removal practices
-- **[Quick Reference](Quick-Reference.md)** - Decision matrix and navigation
+- **[Traditional Guides](traditional-guides/)** - Complete collection of traditional development guides
+  - [Quick Reference](traditional-guides/Quick-Reference.md) - Decision matrix and navigation
+  - [Installation Scripts Guide](traditional-guides/Installation-Scripts-Guide.md) - Software deployment
+  - [Monitor Scripts Guide](traditional-guides/Monitor-Scripts-Guide.md) - Performance-critical monitoring
+  - [Removal/Modification Scripts Guide](traditional-guides/Removal-Modification-Scripts-Guide.md) - Safe removal practices
 
-### 🔄 Legacy Scripts (Traditional Approach)
+### 🔄 Legacy Scripts and Tools
 ```
 legacy/
 ├── DattoRMM-FocusedDebloat-Launcher.ps1  # Original launcher (superseded)
 ├── FocusedDebloat.ps1                    # Original debloat script
-└── Scansnap.ps1                          # Original scanner script
+├── Scansnap.ps1                          # Original scanner script
+└── .netrepair tool.ps1                   # .NET Framework repair utility
 ```
+
+### 📚 Traditional Development Guides
+```
+traditional-guides/
+├── Quick-Reference.md                     # Decision matrix and navigation
+├── Installation-Scripts-Guide.md         # Software deployment guide
+├── Monitor-Scripts-Guide.md              # Performance-critical monitoring
+└── Removal-Modification-Scripts-Guide.md # Safe removal practices
+```
+
 **Migration Path**: Legacy scripts have enhanced versions in the new architecture with shared functions and better error handling.
 
 ## 🎯 Key Features
@@ -296,10 +308,11 @@ exit $LASTEXITCODE
 - **[GitHub Function Library Guide](docs/GitHub-Function-Library-Guide.md)** - Architecture overview
 
 ### Traditional Script Development
-- **[Quick Reference](Quick-Reference.md)** - Decision matrix and immediate guidance
-- **[Installation Scripts Guide](Installation-Scripts-Guide.md)** - Software deployment
-- **[Monitor Scripts Guide](Monitor-Scripts-Guide.md)** - Performance-critical monitoring
-- **[Removal/Modification Scripts Guide](Removal-Modification-Scripts-Guide.md)** - Safe removal practices
+- **[Traditional Guides](traditional-guides/)** - Complete collection of development guides
+- **[Quick Reference](traditional-guides/Quick-Reference.md)** - Decision matrix and immediate guidance
+- **[Installation Scripts Guide](traditional-guides/Installation-Scripts-Guide.md)** - Software deployment
+- **[Monitor Scripts Guide](traditional-guides/Monitor-Scripts-Guide.md)** - Performance-critical monitoring
+- **[Removal/Modification Scripts Guide](traditional-guides/Removal-Modification-Scripts-Guide.md)** - Safe removal practices
 
 ## 📄 License
 
@@ -310,4 +323,4 @@ This project is provided as-is for educational and operational use with Datto RM
 **🚀 Ready to get started?**
 - **New to the repository?** Start with the [Deployment Guide](docs/Deployment-Guide.md) for the GitHub architecture
 - **Existing user?** Check the [Component Categories Guide](docs/Datto-RMM-Component-Categories.md) for the new structure
-- **Traditional approach?** Use the [Quick Reference](Quick-Reference.md) for immediate guidance
+- **Traditional approach?** Use the [Quick Reference](traditional-guides/Quick-Reference.md) for immediate guidance

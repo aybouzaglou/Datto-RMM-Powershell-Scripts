@@ -105,19 +105,21 @@ After implementing the GitHub-based function library architecture, several files
 2. ✅ Moved `DattoRMM-FocusedDebloat-Launcher.ps1` → `legacy/`
 3. ✅ Moved `FocusedDebloat.ps1` → `legacy/`
 4. ✅ Moved `Scansnap.ps1` → `legacy/`
-5. ✅ Removed empty directories: `components/installations/`, `components/maintenance/`
-6. ✅ Fixed directory naming: `components/monitors/` → `components/Monitors/`
-7. ✅ Updated README.md to reflect new structure
-8. ✅ Updated test script to include legacy directory
+5. ✅ Moved `.netrepair tool.ps1` → `legacy/`
+6. ✅ Created `traditional-guides/` directory with documentation
+7. ✅ Moved `Quick-Reference.md` → `traditional-guides/`
+8. ✅ Moved `Installation-Scripts-Guide.md` → `traditional-guides/`
+9. ✅ Moved `Monitor-Scripts-Guide.md` → `traditional-guides/`
+10. ✅ Moved `Removal-Modification-Scripts-Guide.md` → `traditional-guides/`
+11. ✅ Removed empty directories: `components/installations/`, `components/maintenance/`
+12. ✅ Fixed directory naming: `components/monitors/` → `components/Monitors/`
+13. ✅ Updated README.md to reflect new structure
+14. ✅ Updated test script to include all new directories
 
 ### **Final Clean Structure:**
 ```
 ./
 ├── README.md                              # ✅ Updated main entry point
-├── Quick-Reference.md                     # ✅ Traditional approach guide
-├── Installation-Scripts-Guide.md         # ✅ Traditional approach guide
-├── Monitor-Scripts-Guide.md              # ✅ Traditional approach guide
-├── Removal-Modification-Scripts-Guide.md # ✅ Traditional approach guide
 ├── test-architecture.ps1                 # ✅ Architecture validation
 ├── REPOSITORY-CLEANUP-ANALYSIS.md        # ✅ This cleanup documentation
 ├── shared-functions/                      # ✅ New architecture
@@ -127,10 +129,16 @@ After implementing the GitHub-based function library architecture, several files
 │   ├── Monitors/                          # ✅ Datto RMM category (proper case)
 │   └── Scripts/                           # ✅ Datto RMM category (proper case)
 ├── docs/                                  # ✅ New architecture docs
-└── legacy/                                # ✅ Legacy scripts preserved
+├── traditional-guides/                    # ✅ Traditional development guides
+│   ├── Quick-Reference.md
+│   ├── Installation-Scripts-Guide.md
+│   ├── Monitor-Scripts-Guide.md
+│   └── Removal-Modification-Scripts-Guide.md
+└── legacy/                                # ✅ Legacy scripts and tools preserved
     ├── DattoRMM-FocusedDebloat-Launcher.ps1
     ├── FocusedDebloat.ps1
-    └── Scansnap.ps1
+    ├── Scansnap.ps1
+    └── .netrepair tool.ps1
 ```
 
 ### **Benefits Achieved:**
