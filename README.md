@@ -104,9 +104,13 @@ components/
 - **[Quick Reference](Quick-Reference.md)** - Decision matrix and navigation
 
 ### 🔄 Legacy Scripts (Traditional Approach)
-- **[DattoRMM-FocusedDebloat-Launcher.ps1](DattoRMM-FocusedDebloat-Launcher.ps1)** - Original launcher
-- **[FocusedDebloat.ps1](FocusedDebloat.ps1)** - Original debloat script
-- **[Scansnap.ps1](Scansnap.ps1)** - Original scanner script
+```
+legacy/
+├── DattoRMM-FocusedDebloat-Launcher.ps1  # Original launcher (superseded)
+├── FocusedDebloat.ps1                    # Original debloat script
+└── Scansnap.ps1                          # Original scanner script
+```
+**Migration Path**: Legacy scripts have enhanced versions in the new architecture with shared functions and better error handling.
 
 ## 🎯 Key Features
 

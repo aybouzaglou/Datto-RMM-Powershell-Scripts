@@ -187,7 +187,8 @@ if ($TestType -eq 'All') {
         ".\components\Applications",
         ".\components\Scripts",
         ".\launchers",
-        ".\docs"
+        ".\docs",
+        ".\legacy"
     )
     
     foreach ($dir in $requiredDirs) {
