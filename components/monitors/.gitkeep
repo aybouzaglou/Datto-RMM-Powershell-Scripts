@@ -1,0 +1,4 @@
+# Monitors Component Category
+# System health monitoring with <-Start Result-> and <-End Result-> markers
+# Execution: Continuous/recurring, <3 seconds timeout, immutable category
+# Exit Codes: 0=OK/Green, any non-zero=Alert state

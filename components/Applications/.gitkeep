@@ -1,0 +1,4 @@
+# Applications Component Category
+# Software deployment, installation, configuration, and management scripts
+# Execution: On-demand or scheduled, up to 30 minutes timeout
+# Exit Codes: 0=Success, 3010/1641=Reboot required, other=Failed

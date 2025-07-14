@@ -1,0 +1,4 @@
+# Scripts Component Category
+# General automation, maintenance, and utility scripts
+# Execution: On-demand or scheduled, flexible timeout
+# Exit Codes: 0=Success, 1=Warnings, 2=Error, 10=Permission, 11=Timeout

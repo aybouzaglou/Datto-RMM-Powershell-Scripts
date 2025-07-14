@@ -1,99 +1,282 @@
 # Datto RMM PowerShell Scripts
 
-A comprehensive collection of PowerShell scripts designed for Datto RMM (Remote Monitoring and Management) with specialized guidance for different script types and use cases.
+A comprehensive collection of PowerShell scripts designed for Datto RMM (Remote Monitoring and Management) featuring a **GitHub-based function library architecture** for enterprise-grade automation.
 
 ## 🚀 Quick Start
 
-This repository contains both **ready-to-use scripts** and **comprehensive guides** for creating your own Datto RMM PowerShell scripts. Each script type has specific requirements and performance considerations.
+This repository provides both **ready-to-use scripts** and a **sophisticated function library architecture** that transforms your Datto RMM scripting into a professional, maintainable, and scalable automation platform.
 
-### Choose Your Guide
+### 🆕 **NEW: GitHub Function Library Architecture**
 
-| Script Type | Purpose | Performance | Guide |
-|-------------|---------|-------------|-------|
-| 📦 **Installation** | Software deployment, system configuration | Up to 30 minutes | [Installation Scripts Guide](Installation-Scripts-Guide.md) |
-| 🔍 **Monitor** | System health checks, service monitoring | < 3 seconds | [Monitor Scripts Guide](Monitor-Scripts-Guide.md) |
-| 🗑️ **Removal/Modification** | Software removal, system cleanup | Balanced with timeouts | [Removal/Modification Scripts Guide](Removal-Modification-Scripts-Guide.md) |
+**Zero-maintenance script updates** - Scripts automatically download the latest versions from GitHub without touching your RMM components!
 
-📋 **[Quick Reference](Quick-Reference.md)** - Decision matrix and overview of all script types
+```powershell
+# Simple launcher in your Datto RMM component
+$LauncherURL = "https://raw.githubusercontent.com/aybouzaglou/Datto-RMM-Powershell-Scripts/main/launchers/UniversalLauncher.ps1"
+$LauncherPath = "$env:TEMP\UniversalLauncher.ps1"
+(New-Object System.Net.WebClient).DownloadFile($LauncherURL, $LauncherPath)
+& $LauncherPath -ScriptName $env:ScriptName -ScriptType $env:ScriptType
+exit $LASTEXITCODE
+```
 
-## 📁 Repository Contents
+**Benefits:**
+- ✅ **Auto-updating scripts** - No more manual RMM component updates
+- ✅ **Shared function library** - Consistent, reliable operations across all scripts
+- ✅ **Version control** - Full Git history and rollback capabilities
+- ✅ **Enterprise features** - Caching, offline mode, timeout protection
+- ✅ **Better debugging** - Comprehensive logging and error handling
 
-### Ready-to-Use Scripts
+### 🏗️ Architecture Overview
 
-- **[DattoRMM-FocusedDebloat-Launcher.ps1](DattoRMM-FocusedDebloat-Launcher.ps1)** - Launcher for focused system debloating
-- **[FocusedDebloat.ps1](FocusedDebloat.ps1)** - Main debloating script for system cleanup
-- **[Scansnap.ps1](Scansnap.ps1)** - Scanner-related automation script
+| Component | Purpose | Location | Documentation |
+|-----------|---------|----------|---------------|
+| 🔧 **Shared Functions** | Reusable function library | `shared-functions/` | [Function Reference](docs/Function-Reference.md) |
+| 🚀 **Launchers** | Universal script launchers | `launchers/` | [Deployment Guide](docs/Deployment-Guide.md) |
+| 📦 **Components** | Datto RMM component categories | `components/` | [Component Categories Guide](docs/Datto-RMM-Component-Categories.md) |
 
-### Documentation & Guides
+### 🎯 Datto RMM Component Categories
 
-- **[Installation Scripts Guide](Installation-Scripts-Guide.md)** - Complete guide for software deployment scripts
-- **[Monitor Scripts Guide](Monitor-Scripts-Guide.md)** - Performance-critical monitoring script guidance
-- **[Removal/Modification Scripts Guide](Removal-Modification-Scripts-Guide.md)** - Safe removal and modification practices
-- **[Quick Reference](Quick-Reference.md)** - Decision matrix and quick navigation
+| Category | Purpose | Timeout | Category Changeable | Location |
+|----------|---------|---------|---------------------|----------|
+| 🔧 **Applications** | Software deployment/installation | Up to 30 min | Yes (↔ Scripts) | `components/Applications/` |
+| 📊 **Monitors** | System health monitoring | <3 seconds | No (category locked) | `components/Monitors/` |
+| 📝 **Scripts** | General automation/maintenance | Flexible | Yes (↔ Applications) | `components/Scripts/` |
+
+### Choose Your Approach
+
+| Approach | Best For | Setup Time | Maintenance |
+|----------|----------|------------|-------------|
+| 🆕 **GitHub Architecture** | New deployments, enterprise environments | 15 minutes | Zero - auto-updating |
+| 📚 **Traditional Guides** | Existing scripts, learning, custom development | Immediate | Manual updates |
+
+**📋 [Quick Reference](Quick-Reference.md)** - Traditional script type decision matrix
+**🚀 [Deployment Guide](docs/Deployment-Guide.md)** - Get started with GitHub architecture in 15 minutes
+**📊 [Component Categories](docs/Datto-RMM-Component-Categories.md)** - Understand Datto RMM's three component types
+
+## 📁 Repository Structure
+
+### 🔧 Shared Function Library
+```
+shared-functions/
+├── Core/
+│   ├── RMMLogging.ps1          # Standardized logging functions
+│   ├── RMMValidation.ps1       # Input validation and system checks
+│   └── RMMSoftwareDetection.ps1 # Fast software detection (no Win32_Product)
+├── Utilities/
+│   ├── NetworkUtils.ps1        # Network operations and downloads
+│   ├── FileOperations.ps1      # File and directory operations
+│   └── RegistryHelpers.ps1     # Registry operations
+└── SharedFunctions.ps1         # Master loader with caching
+```
+
+### 🚀 Universal Launchers
+```
+launchers/
+├── UniversalLauncher.ps1       # Works with all component categories
+├── LaunchInstaller.ps1         # Optimized for Applications components
+├── LaunchMonitor.ps1           # Optimized for Monitors components
+└── LaunchScripts.ps1           # Optimized for Scripts components
+```
+
+### 📦 Component Scripts (Datto RMM Categories)
+```
+components/
+├── Applications/               # Software deployment (changeable)
+│   └── ScanSnapHome.ps1       # ScanSnap Home installation
+├── Monitors/                   # System health (immutable, <3s)
+│   └── DiskSpaceMonitor.ps1   # Disk space monitoring
+└── Scripts/                    # General automation (changeable)
+    └── FocusedDebloat.ps1     # Windows bloatware removal
+```
+
+### 📚 Documentation & Guides
+
+#### GitHub Function Library Architecture
+- **[GitHub Function Library Guide](docs/GitHub-Function-Library-Guide.md)** - Complete architecture overview
+- **[Function Reference](docs/Function-Reference.md)** - Detailed function documentation
+- **[Deployment Guide](docs/Deployment-Guide.md)** - 15-minute setup guide
+- **[Component Categories](docs/Datto-RMM-Component-Categories.md)** - Datto RMM category guide
+
+#### Traditional Script Development
+- **[Installation Scripts Guide](Installation-Scripts-Guide.md)** - Software deployment scripts
+- **[Monitor Scripts Guide](Monitor-Scripts-Guide.md)** - Performance-critical monitoring
+- **[Removal/Modification Scripts Guide](Removal-Modification-Scripts-Guide.md)** - Safe removal practices
+- **[Quick Reference](Quick-Reference.md)** - Decision matrix and navigation
+
+### 🔄 Legacy Scripts (Traditional Approach)
+- **[DattoRMM-FocusedDebloat-Launcher.ps1](DattoRMM-FocusedDebloat-Launcher.ps1)** - Original launcher
+- **[FocusedDebloat.ps1](FocusedDebloat.ps1)** - Original debloat script
+- **[Scansnap.ps1](Scansnap.ps1)** - Original scanner script
 
 ## 🎯 Key Features
 
-### Universal Requirements
+### 🆕 GitHub Function Library Architecture
+- **🔄 Auto-updating scripts** - Zero maintenance, scripts update automatically
+- **📚 Shared function library** - Consistent, reliable operations across all scripts
+- **🏷️ Version control** - Full Git history, rollback capabilities, branch support
+- **⚡ Enterprise features** - Caching, offline mode, timeout protection
+- **🐛 Enhanced debugging** - Comprehensive logging and error handling
+- **🔧 Modular design** - Reusable functions, easy customization
 
-- **LocalSystem Context**: All scripts run as NT AUTHORITY\SYSTEM
-- **No GUI Elements**: Scripts run invisibly in system context
-- **Standardized Exit Codes**: Consistent error reporting across all scripts
-- **Event Logging**: Built-in Windows Event Log integration
-- **Security**: TLS 1.2 enforcement and signature verification
+### 📊 Datto RMM Integration
+- **🎯 Component categories** - Aligned with Applications, Monitors, Scripts
+- **⏱️ Timeout optimization** - Category-specific execution patterns
+- **🔒 Immutable Monitors** - Proper handling of Monitor category restrictions
+- **📈 Exit code standards** - Category-appropriate success/failure codes
+- **🔄 Launcher system** - Universal and specialized launchers
 
-### Performance Optimization
+### 🛡️ Universal Requirements
+- **🔐 LocalSystem Context**: All scripts run as NT AUTHORITY\SYSTEM
+- **👻 No GUI Elements**: Scripts run invisibly in system context
+- **📊 Standardized Exit Codes**: Consistent error reporting across all scripts
+- **📝 Event Logging**: Built-in Windows Event Log integration
+- **🔒 Security**: TLS 1.2 enforcement and secure downloads
 
-- **Monitor Scripts**: Optimized for < 3-second execution
-- **Registry-First Detection**: Fast software detection methods
-- **Timeout Protection**: Prevents hanging processes
-- **Resource Efficiency**: Minimal system impact
+### ⚡ Performance Optimization
+- **📊 Monitor Scripts**: Optimized for <3-second execution (Datto RMM requirement)
+- **🔍 Registry-First Detection**: Fast software detection (avoids Win32_Product)
+- **⏰ Timeout Protection**: Prevents hanging processes with configurable timeouts
+- **💾 Resource Efficiency**: Minimal system impact with intelligent caching
+- **🚀 Function Caching**: Local caching reduces download overhead
 
 ## 🛠️ Getting Started
 
-1. **Identify your script type** using the table above
+### 🚀 Quick Start (GitHub Architecture - Recommended)
+
+1. **Choose your Datto RMM component category**:
+   - 🔧 **Applications**: Software deployment/installation
+   - 📊 **Monitors**: System health monitoring (<3 seconds)
+   - 📝 **Scripts**: General automation/maintenance
+
+2. **Create a Datto RMM component** with this simple launcher:
+   ```powershell
+   # Universal launcher for any component category
+   $LauncherURL = "https://raw.githubusercontent.com/aybouzaglou/Datto-RMM-Powershell-Scripts/main/launchers/UniversalLauncher.ps1"
+   $LauncherPath = "$env:TEMP\UniversalLauncher.ps1"
+   [Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject([Net.SecurityProtocolType], 3072)
+   (New-Object System.Net.WebClient).DownloadFile($LauncherURL, $LauncherPath)
+   & $LauncherPath -ScriptName $env:ScriptName -ScriptType $env:ScriptType
+   exit $LASTEXITCODE
+   ```
+
+3. **Set environment variables** in your Datto RMM component:
+   - `ScriptName`: Name of script file (e.g., "FocusedDebloat.ps1")
+   - `ScriptType`: Component category ("Applications", "Monitors", "Scripts")
+
+4. **Deploy and enjoy** - Scripts auto-update from GitHub!
+
+### 📚 Traditional Approach
+
+1. **Identify your script type** using the [Quick Reference](Quick-Reference.md)
 2. **Read the appropriate guide** for detailed requirements and templates
 3. **Use the provided templates** as starting points for your scripts
 4. **Test thoroughly** in non-production environments
-5. **Deploy** through Datto RMM with confidence
+5. **Deploy** through Datto RMM with manual updates
 
 ## 📖 Documentation Structure
 
+### 🆕 GitHub Function Library Architecture
+```text
+├── docs/
+│   ├── GitHub-Function-Library-Guide.md     # Complete architecture overview
+│   ├── Function-Reference.md                # Detailed function documentation
+│   ├── Deployment-Guide.md                  # 15-minute setup guide
+│   └── Datto-RMM-Component-Categories.md    # Component category guide
+├── shared-functions/                        # Reusable function library
+├── launchers/                               # Universal script launchers
+└── components/                              # Scripts organized by Datto RMM categories
+```
+
+### 📚 Traditional Script Development
 ```text
 ├── README.md                              # This file - main entry point
 ├── Quick-Reference.md                     # Decision matrix and overview
 ├── Installation-Scripts-Guide.md         # Software deployment guide
 ├── Monitor-Scripts-Guide.md              # System monitoring guide
 ├── Removal-Modification-Scripts-Guide.md # Software removal guide
-├── DattoRMM-FocusedDebloat-Launcher.ps1 # Example launcher script
-├── FocusedDebloat.ps1                    # Example debloat script
-└── Scansnap.ps1                          # Example utility script
+├── DattoRMM-FocusedDebloat-Launcher.ps1 # Legacy launcher script
+├── FocusedDebloat.ps1                    # Legacy debloat script
+└── Scansnap.ps1                          # Legacy utility script
 ```
 
 ## 🔧 Common Operations
 
-### Quick Decision Matrix
+### 📊 Datto RMM Component Category Matrix
 
-| Operation | Monitor Scripts | Installation Scripts | Removal Scripts |
-|-----------|----------------|---------------------|-----------------|
+| Operation | Applications | Monitors | Scripts |
+|-----------|-------------|----------|---------|
 | `Get-WmiObject Win32_Product` | ❌ NEVER | ❌ NEVER | ❌ NEVER |
-| `Get-CimInstance Win32_Product` | ⚠️ With timeout | ✅ OK | ✅ OK |
-| `Start-Process -Wait` (known) | ❌ Too slow | ✅ OK | ✅ OK |
-| Registry detection | ✅ PREFERRED | ✅ Good | ✅ Good |
-| Network operations | ⚠️ Add timeout | ✅ OK | ✅ OK |
+| `Get-CimInstance Win32_Product` | ✅ OK | ❌ Too slow | ✅ OK |
+| `Start-Process -Wait` | ✅ OK | ❌ Too slow | ✅ OK |
+| Registry detection | ✅ PREFERRED | ✅ REQUIRED | ✅ PREFERRED |
+| Network operations | ✅ OK | ⚠️ Cached only | ✅ OK |
+| Shared functions | ✅ Full library | ⚠️ Minimal only | ✅ Full library |
+| Timeout requirements | Up to 30 min | <3 seconds | Flexible |
 
-### Standard Exit Codes
+### 🎯 Component-Specific Exit Codes
 
-- **0**: Success
+#### Applications Components
+- **0**: Success (installation/deployment completed)
+- **3010**: Success with reboot required
+- **1641**: Success with reboot initiated
+- Other non-zero: Failed
+
+#### Monitors Components
+- **0**: OK/Green (system healthy)
+- Any non-zero: Alert state (triggers RMM alert)
+
+#### Scripts Components
+- **0**: Success (all operations completed)
 - **1**: Success with warnings
-- **2**: Partial success
+- **2**: Error (some operations failed)
 - **10**: Permission error
 - **11**: Timeout error
-- **12**: Configuration error
-- **30**: Monitor critical
-- **31**: Monitor warning
+
+## 🚀 Example Usage
+
+### Applications Component (Software Installation)
+```powershell
+# Datto RMM Applications Component
+# Environment Variables: ScriptName="ScanSnapHome.ps1"
+$LauncherURL = "https://raw.githubusercontent.com/aybouzaglou/Datto-RMM-Powershell-Scripts/main/launchers/LaunchInstaller.ps1"
+$LauncherPath = "$env:TEMP\LaunchInstaller.ps1"
+(New-Object System.Net.WebClient).DownloadFile($LauncherURL, $LauncherPath)
+& $LauncherPath -ScriptName $env:ScriptName
+exit $LASTEXITCODE
+```
+
+### Monitors Component (System Health)
+```powershell
+# Datto RMM Custom Monitor Component
+# Environment Variables: ScriptName="DiskSpaceMonitor.ps1", WarningThreshold=15, CriticalThreshold=5
+$LauncherURL = "https://raw.githubusercontent.com/aybouzaglou/Datto-RMM-Powershell-Scripts/main/launchers/LaunchMonitor.ps1"
+$LauncherPath = "$env:TEMP\LaunchMonitor.ps1"
+(New-Object System.Net.WebClient).DownloadFile($LauncherURL, $LauncherPath)
+& $LauncherPath -ScriptName $env:ScriptName
+exit $LASTEXITCODE
+```
+
+### Scripts Component (General Automation)
+```powershell
+# Datto RMM Scripts Component
+# Environment Variables: ScriptName="FocusedDebloat.ps1", customwhitelist="App1,App2"
+$LauncherURL = "https://raw.githubusercontent.com/aybouzaglou/Datto-RMM-Powershell-Scripts/main/launchers/LaunchScripts.ps1"
+$LauncherPath = "$env:TEMP\LaunchScripts.ps1"
+(New-Object System.Net.WebClient).DownloadFile($LauncherURL, $LauncherPath)
+& $LauncherPath -ScriptName $env:ScriptName
+exit $LASTEXITCODE
+```
 
 ## 🤝 Contributing
 
+### GitHub Function Library Architecture
+1. **Add new functions** to appropriate modules in `shared-functions/`
+2. **Create new scripts** in correct component category directories
+3. **Use shared functions** for consistent behavior and error handling
+4. **Test with launchers** to ensure proper integration
+5. **Update documentation** for new functions or scripts
+
+### Traditional Script Development
 1. Follow the appropriate script type guide
 2. Test thoroughly in non-production environments
 3. Use standardized exit codes and event logging
@@ -102,10 +285,17 @@ This repository contains both **ready-to-use scripts** and **comprehensive guide
 
 ## 📞 Support
 
-- Review the [Quick Reference](Quick-Reference.md) for immediate guidance
-- Check the specific guide for your script type
-- Ensure you're following universal requirements
-- Test with appropriate timeouts and error handling
+### GitHub Function Library Architecture
+- **[Deployment Guide](docs/Deployment-Guide.md)** - 15-minute setup walkthrough
+- **[Function Reference](docs/Function-Reference.md)** - Complete function documentation
+- **[Component Categories](docs/Datto-RMM-Component-Categories.md)** - Category selection guide
+- **[GitHub Function Library Guide](docs/GitHub-Function-Library-Guide.md)** - Architecture overview
+
+### Traditional Script Development
+- **[Quick Reference](Quick-Reference.md)** - Decision matrix and immediate guidance
+- **[Installation Scripts Guide](Installation-Scripts-Guide.md)** - Software deployment
+- **[Monitor Scripts Guide](Monitor-Scripts-Guide.md)** - Performance-critical monitoring
+- **[Removal/Modification Scripts Guide](Removal-Modification-Scripts-Guide.md)** - Safe removal practices
 
 ## 📄 License
 
@@ -113,4 +303,7 @@ This project is provided as-is for educational and operational use with Datto RM
 
 ---
 
-**⚡ Ready to get started?** Choose your script type from the table above and dive into the appropriate guide!
+**🚀 Ready to get started?**
+- **New to the repository?** Start with the [Deployment Guide](docs/Deployment-Guide.md) for the GitHub architecture
+- **Existing user?** Check the [Component Categories Guide](docs/Datto-RMM-Component-Categories.md) for the new structure
+- **Traditional approach?** Use the [Quick Reference](Quick-Reference.md) for immediate guidance
