@@ -73,11 +73,11 @@ exit $LASTEXITCODE
 | 📚 **Documentation** | Comprehensive guides | `docs/` | 15+ detailed guides | [Documentation Index](#-documentation-index) |
 
 ### **Datto RMM Component Categories & Deployment Strategy**
-| Category | Purpose | Timeout | Changeable | Deployment Strategy | Dependencies | Location |
-|----------|---------|---------|------------|-------------------|--------------|----------|
-| 🔧 **Applications** | Software deployment | Up to 30 min | Yes ↔ Scripts | **Launcher-based** | Can use shared functions | `components/Applications/` |
-| 📊 **Monitors** | System health checks | <3 seconds | **No** (immutable) | **Direct deployment ONLY** | **Self-contained** | `components/monitors/` |
-| 📝 **Scripts** | General automation | Flexible | Yes ↔ Applications | **Launcher-based** | Can use shared functions | `components/Scripts/` |
+| Category | Purpose | Timeout | Changeable | Deployment Strategy | Function Patterns | Location |
+|----------|---------|---------|------------|-------------------|-------------------|----------|
+| 🔧 **Applications** | Software deployment | Up to 30 min | Yes ↔ Scripts | **Launcher-based** | Copy/paste from shared-functions | `components/Applications/` |
+| 📊 **Monitors** | System health checks | <3 seconds | **No** (immutable) | **Direct deployment ONLY** | **Embedded only** (copy/paste) | `components/monitors/` |
+| 📝 **Scripts** | General automation | Flexible | Yes ↔ Applications | **Launcher-based** | Copy/paste from shared-functions | `components/Scripts/` |
 
 **🎯 Critical Architecture Rules:**
 - **Monitors**: Always self-contained, embed functions directly, no external dependencies
@@ -115,15 +115,13 @@ shared-functions/
 ├── EmbeddedMonitorFunctions.ps1 # **COPY THESE** into monitor scripts for direct deployment
 ├── PerformanceMonitorFunctions.ps1 # Performance monitoring patterns
 ├── SecurityMonitorFunctions.ps1    # Security monitoring patterns
-├── SystemMonitorFunctions.ps1      # System health monitoring patterns
-└── SharedFunctions.ps1        # **DEPRECATED** - Legacy launcher function loader
+└── SystemMonitorFunctions.ps1      # System health monitoring patterns
 ```
 
 **🎯 Usage Philosophy:**
 - **For Monitors**: Copy functions from `EmbeddedMonitorFunctions.ps1` directly into your script
-- **For Applications/Scripts**: Use launchers for auto-updating (can reference patterns)
+- **For Applications/Scripts**: Copy needed function patterns directly into your scripts
 - **For Development**: Use as reference patterns and proven code examples
-- **SharedFunctions.ps1**: Legacy file for launcher compatibility only
 
 ### 🚀 **Universal Launchers** (`launchers/`) - **APPLICATIONS & SCRIPTS ONLY**
 > **⚠️ IMPORTANT**: Launchers are ONLY for Applications and Scripts components. Monitors use direct deployment for maximum performance.
@@ -132,7 +130,7 @@ shared-functions/
 launchers/
 ├── UniversalLauncher.ps1      # For Applications & Scripts (NOT Monitors)
 ├── LaunchInstaller.ps1        # Optimized for Applications (30min timeout)
-├── LaunchMonitor.ps1          # ❌ DEPRECATED - Monitors use direct deployment
+
 └── LaunchScripts.ps1          # Optimized for Scripts (flexible timeout)
 ```
 
@@ -348,8 +346,8 @@ Every push triggers enterprise-grade validation:
 # Test individual scripts locally
 .\components\Scripts\FocusedDebloat.ps1 -WhatIf
 
-# Validate shared functions
-.\shared-functions\SharedFunctions.ps1 -TestMode
+# Validate function patterns (copy/paste approach)
+# Functions are now embedded directly in scripts
 
 # Test launchers
 .\launchers\UniversalLauncher.ps1 -ScriptName "Test-Workflow.ps1" -ScriptType "Scripts"
@@ -433,7 +431,7 @@ git push origin feature/new-monitor
 | `Start-Process -Wait` | ✅ OK | ❌ Too slow | ✅ OK |
 | Registry detection | ✅ PREFERRED | ✅ REQUIRED | ✅ PREFERRED |
 | Network operations | ✅ OK | ⚠️ Cached only | ✅ OK |
-| Shared functions | ✅ Full library | ⚠️ Minimal only | ✅ Full library |
+| Function patterns | ✅ Copy any patterns | ⚠️ Copy minimal only | ✅ Copy any patterns |
 | Timeout requirements | Up to 30 min | <3 seconds | Flexible |
 
 ### 🎯 Component-Specific Exit Codes

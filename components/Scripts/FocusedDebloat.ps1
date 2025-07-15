@@ -8,7 +8,7 @@ Removes manufacturer-specific and Windows bloatware optimized for Datto RMM Scri
 - Only processes relevant bloatware for detected manufacturer
 - Windows built-in bloatware (AppX packages)
 - Enhanced removal methods with timeout protection
-- Uses shared RMM function library for improved reliability
+- Uses embedded RMM functions for maximum reliability and performance
 - Does NOT modify registry settings
 - Does NOT remove Microsoft Office
 
@@ -66,63 +66,58 @@ param (
     [string[]]$customwhitelist
 )
 
-# Load shared functions if available (fallback to standalone mode if not)
-if ($Global:RMMFunctionsLoaded) {
-    Write-RMMLog "Using shared RMM function library v$($Global:RMMFunctionsVersion)" -Level Config
-} else {
-    Write-Output "INFO    Shared functions not loaded, using standalone mode"
-    
-    # Fallback logging function
-    function Write-RMMLog {
-        param([string]$Message, [string]$Level = 'Info')
-        $prefix = switch ($Level) {
-            'Success' { 'SUCCESS ' }
-            'Failed'  { 'FAILED  ' }
-            'Warning' { 'WARNING ' }
-            'Status'  { 'STATUS  ' }
-            'Config'  { 'CONFIG  ' }
-            'Detect'  { 'DETECT  ' }
-            'Metric'  { 'METRIC  ' }
-            default   { 'INFO    ' }
-        }
-        Write-Output "$prefix$Message"
+# Embedded functions (copied from shared-functions/)
+
+# Embedded logging function (from shared-functions/Core/RMMLogging.ps1)
+function Write-RMMLog {
+    param([string]$Message, [string]$Level = 'Info')
+    $prefix = switch ($Level) {
+        'Success' { 'SUCCESS ' }
+        'Failed'  { 'FAILED  ' }
+        'Warning' { 'WARNING ' }
+        'Status'  { 'STATUS  ' }
+        'Config'  { 'CONFIG  ' }
+        'Detect'  { 'DETECT  ' }
+        'Metric'  { 'METRIC  ' }
+        default   { 'INFO    ' }
     }
-    
-    # Fallback timeout function
-    function Invoke-RMMTimeout {
-        param([scriptblock]$Code, [int]$TimeoutSec = 300, [string]$OperationName = "Operation")
-        try {
-            $job = Start-Job $Code
-            if (Wait-Job $job -Timeout $TimeoutSec) {
-                $result = Receive-Job $job
-                Remove-Job $job -Force
-                return $result
-            } else {
-                Stop-Job $job -Force
-                Remove-Job $job -Force
-                throw "Operation '$OperationName' exceeded ${TimeoutSec}s timeout"
-            }
-        } catch {
-            Write-RMMLog "Timeout wrapper error for '$OperationName': $($_.Exception.Message)" -Level Failed
-            throw
+    Write-Output "$prefix$Message"
+}
+
+# Embedded timeout function (from shared-functions/Core/RMMValidation.ps1)
+function Invoke-RMMTimeout {
+    param([scriptblock]$Code, [int]$TimeoutSec = 300, [string]$OperationName = "Operation")
+    try {
+        $job = Start-Job $Code
+        if (Wait-Job $job -Timeout $TimeoutSec) {
+            $result = Receive-Job $job
+            Remove-Job $job -Force
+            return $result
+        } else {
+            Stop-Job $job -Force
+            Remove-Job $job -Force
+            throw "Operation '$OperationName' exceeded ${TimeoutSec}s timeout"
         }
+    } catch {
+        Write-RMMLog "Timeout wrapper error for '$OperationName': $($_.Exception.Message)" -Level Failed
+        throw
     }
-    
-    # Fallback variable function
-    function Get-RMMVariable {
-        param([string]$Name, [string]$Type='String', [object]$Default='', [switch]$Required)
-        $val = Get-Item "env:$Name" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Value
-        if ([string]::IsNullOrWhiteSpace($val)) {
-            if ($Required) {
-                Write-RMMLog "Input variable '$Name' required but not supplied" -Level Failed
-                throw "Input '$Name' required but not supplied"
-            }
-            return $Default
+}
+
+# Embedded variable function (from shared-functions/Core/RMMValidation.ps1)
+function Get-RMMVariable {
+    param([string]$Name, [string]$Type='String', [object]$Default='', [switch]$Required)
+    $val = Get-Item "env:$Name" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Value
+    if ([string]::IsNullOrWhiteSpace($val)) {
+        if ($Required) {
+            Write-RMMLog "Input variable '$Name' required but not supplied" -Level Failed
+            throw "Input '$Name' required but not supplied"
         }
-        switch ($Type) {
-            'Boolean' { return ($val -eq 'true') }
-            default   { return $val }
-        }
+        return $Default
+    }
+    switch ($Type) {
+        'Boolean' { return ($val -eq 'true') }
+        default   { return $val }
     }
 }
 
@@ -173,33 +168,30 @@ Write-RMMLog "- Skip Lenovo bloat: $skipLenovo" -Level Config
 Write-RMMLog "Detecting system manufacturer..." -Level Status
 
 try {
-    # Use shared function if available, otherwise fallback
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Get-RMMManufacturer -ErrorAction SilentlyContinue)) {
-        $manufacturerInfo = Get-RMMManufacturer -IncludeModel
-        $manufacturer = $manufacturerInfo.Manufacturer
-        $detectedHP = $manufacturerInfo.IsHP
-        $detectedDell = $manufacturerInfo.IsDell
-        $detectedLenovo = $manufacturerInfo.IsLenovo
-        
-        Write-RMMLog "Manufacturer: $manufacturer" -Level Detect
-        Write-RMMLog "Model: $($manufacturerInfo.Model)" -Level Detect
-    } else {
-        # Fallback manufacturer detection
-        $system = Get-WmiObject -Class Win32_ComputerSystem -ErrorAction Stop
-        $manufacturer = $system.Manufacturer
-        $detectedHP = $manufacturer -match "HP|Hewlett"
-        $detectedDell = $manufacturer -match "Dell"
-        $detectedLenovo = $manufacturer -match "Lenovo"
-        
-        Write-RMMLog "Manufacturer: $manufacturer" -Level Detect
+    # Embedded manufacturer detection (pattern from shared-functions/Core/RMMSoftwareDetection.ps1)
+    $manufacturer = "Unknown"
+    $detectedHP = $false
+    $detectedDell = $false
+    $detectedLenovo = $false
+
+    # Simple manufacturer detection using WMI
+    try {
+        $systemInfo = Get-WmiObject -Class Win32_ComputerSystem -ErrorAction SilentlyContinue
+        if ($systemInfo) {
+            $manufacturer = $systemInfo.Manufacturer
+            $detectedHP = $manufacturer -match "HP|Hewlett"
+            $detectedDell = $manufacturer -match "Dell"
+            $detectedLenovo = $manufacturer -match "Lenovo"
+        }
+    } catch {
+        Write-RMMLog "Could not detect manufacturer: $($_.Exception.Message)" -Level Warning
     }
 
+    Write-RMMLog "Manufacturer: $manufacturer" -Level Detect
     Write-RMMLog "Manufacturer Detection Results:" -Level Detect
     Write-RMMLog "- HP detected: $detectedHP" -Level Detect
     Write-RMMLog "- Dell detected: $detectedDell" -Level Detect
     Write-RMMLog "- Lenovo detected: $detectedLenovo" -Level Detect
-
-    $Global:RMMSuccessCount++
 }
 catch {
     Write-RMMLog "Manufacturer detection failed: $($_.Exception.Message)" -Level Failed
@@ -220,12 +212,8 @@ if (-not (Test-Path $logPath)) {
     New-Item -Path $logPath -ItemType Directory -Force | Out-Null
 }
 
-# Start transcript using shared function if available
-if ($Global:RMMFunctionsLoaded -and (Get-Command Start-RMMTranscript -ErrorAction SilentlyContinue)) {
-    $transcriptPath = Start-RMMTranscript -LogName "Debloat-Scripts" -LogDirectory $logPath
-} else {
-    Start-Transcript -Path "$logPath\Debloat-Scripts.log"
-}
+# Start transcript (embedded pattern from shared-functions/Core/RMMLogging.ps1)
+Start-Transcript -Path "$logPath\Debloat-Scripts.log"
 
 Write-RMMLog "=============================================="
 Write-RMMLog "Focused Debloat - Scripts Component v2.0.0" -Level Status
@@ -235,7 +223,7 @@ Write-RMMLog "Focus: Manufacturer-specific + Windows bloat removal" -Level Confi
 Write-RMMLog "Registry modifications: DISABLED" -Level Config
 Write-RMMLog "Office removal: DISABLED" -Level Config
 Write-RMMLog "Execution time: $(Get-Date)" -Level Config
-Write-RMMLog "Shared functions: $($Global:RMMFunctionsLoaded)" -Level Config
+Write-RMMLog "Functions: Embedded (self-contained)" -Level Config
 Write-RMMLog ""
 
 # Note: The rest of the script content would continue here with the bloatware definitions,

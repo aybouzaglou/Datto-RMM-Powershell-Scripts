@@ -5,7 +5,7 @@ Bluescreen Monitor - Datto RMM Monitors Component
 .DESCRIPTION
 Fast bluescreen (BSOD) monitoring script optimized for Datto RMM Monitors component:
 - Checks Windows Event Log for blue screen events in the past 7 days
-- Uses shared RMM function library for improved reliability
+- Uses embedded RMM functions for maximum reliability and performance
 - Fast execution (completes in under 3 seconds)
 - Configurable time window for BSOD detection
 - Proper <-Start Result-> and <-End Result-> markers for RMM UI
@@ -63,39 +63,30 @@ param(
 #                                         Initial Setup                                                    #
 ############################################################################################################
 
-# Load shared functions if available (fallback to standalone mode if not)
-if ($Global:RMMFunctionsLoaded) {
-    # Use shared logging but don't update counters for monitors
-    function Write-MonitorLog {
-        param([string]$Message, [string]$Level = 'Info')
-        Write-RMMLog $Message -Level $Level -UpdateCounters $false
-    }
-} else {
-    # Fallback logging function for monitors
-    function Write-MonitorLog {
-        param([string]$Message, [string]$Level = 'Info')
-        # Minimal logging for performance
-        # Don't write to console to avoid interfering with monitor output
+# Embedded logging function for monitors (copied from shared-functions/EmbeddedMonitorFunctions.ps1)
+function Write-MonitorLog {
+    param([string]$Message, [string]$Level = 'Info')
+    # Minimal logging for performance - don't write to console to avoid interfering with monitor output
+    # This is embedded for maximum reliability and performance
+}
+
+# Embedded environment variable function (copied from shared-functions/EmbeddedMonitorFunctions.ps1)
+function Get-RMMVariable {
+    param([string]$Name, [string]$Type = "String", $Default = $null)
+
+    $value = [Environment]::GetEnvironmentVariable($Name)
+    if ([string]::IsNullOrEmpty($value)) { return $Default }
+
+    switch ($Type) {
+        "Integer" { try { return [int]$value } catch { return $Default } }
+        "Boolean" { return ($value -eq "true" -or $value -eq "1" -or $value -eq "yes") }
+        default { return $value }
     }
 }
 
-# Get environment variables using shared functions if available
-if ($Global:RMMFunctionsLoaded -and (Get-Command Get-RMMVariable -ErrorAction SilentlyContinue)) {
-    $DaysToCheck = Get-RMMVariable -Name "DaysToCheck" -Type "Integer" -Default $DaysToCheck
-    $IncludeDetails = Get-RMMVariable -Name "IncludeDetails" -Type "Boolean" -Default $IncludeDetails
-} else {
-    # Fallback environment variable handling
-    if ($env:DaysToCheck) {
-        try {
-            $DaysToCheck = [int]$env:DaysToCheck
-        } catch {
-            Write-MonitorLog "Invalid DaysToCheck value: $env:DaysToCheck, using default: $DaysToCheck" -Level Warning
-        }
-    }
-    if ($env:IncludeDetails) {
-        $IncludeDetails = ($env:IncludeDetails -eq 'true' -or $env:IncludeDetails -eq '1' -or $env:IncludeDetails -eq 'yes')
-    }
-}
+# Get environment variables using embedded function
+$DaysToCheck = Get-RMMVariable -Name "DaysToCheck" -Type "Integer" -Default $DaysToCheck
+$IncludeDetails = Get-RMMVariable -Name "IncludeDetails" -Type "Boolean" -Default $IncludeDetails
 
 ############################################################################################################
 #                                    Centralized Alert Function                                           #
@@ -258,16 +249,11 @@ try {
 
         Write-MonitorAlert "CRITICAL: $message"
     }
-    
+
 } catch {
-    # Critical error in monitor
+    # Critical error in monitor - embedded error handling
     Write-Host "! CRITICAL ERROR: Monitor execution failed"
     Write-Host "  Exception: $($_.Exception.Message)"
     $errorMessage = "Bluescreen monitor failed: $($_.Exception.Message)"
-
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Write-RMMMonitorResult -ErrorAction SilentlyContinue)) {
-        Write-RMMMonitorResult -Status "CRITICAL" -Message $errorMessage -ExitCode 1
-    } else {
-        Write-MonitorAlert "CRITICAL: $errorMessage"
-    }
+    Write-MonitorAlert "CRITICAL: $errorMessage"
 }

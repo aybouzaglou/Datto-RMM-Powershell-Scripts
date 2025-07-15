@@ -153,34 +153,9 @@ try {
         }
     }
     
-    # Step 1: Download and load shared functions
-    Write-Output "=== Loading Shared Functions ==="
-    $functionsURL = "$BaseURL/shared-functions/SharedFunctions.ps1"
-    $functionsPath = Join-Path $WorkingDir "SharedFunctions.ps1"
-    
-    if (-not $OfflineMode) {
-        try {
-            Write-Output "Downloading shared functions from: $functionsURL"
-            (New-Object System.Net.WebClient).DownloadFile($functionsURL, $functionsPath)
-            Write-Output "✓ Shared functions downloaded successfully"
-        } catch {
-            Write-Warning "Could not download shared functions: $($_.Exception.Message)"
-            Write-Output "Checking for cached version..."
-        }
-    }
-    
-    # Load shared functions (downloaded or cached)
-    if (Test-Path $functionsPath) {
-        try {
-            . $functionsPath -GitHubRepo $GitHubRepo -Branch $Branch -ForceDownload:$ForceDownload -OfflineMode:$OfflineMode
-            Write-Output "✓ Shared functions loaded successfully"
-        } catch {
-            Write-Warning "Failed to load shared functions: $($_.Exception.Message)"
-            Write-Output "Continuing without shared functions..."
-        }
-    } else {
-        Write-Warning "Shared functions not available. Some features may be limited."
-    }
+    # Step 1: ⚠️ DEPRECATED - Shared functions are now embedded in scripts
+    Write-Output "=== Note: Scripts now use embedded functions (no shared function loading) ==="
+    Write-Output "✓ Modern scripts are self-contained for maximum reliability"
     
     # Step 2: Download target script
     Write-Output ""

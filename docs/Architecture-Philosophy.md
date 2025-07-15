@@ -109,8 +109,8 @@ if ($diskUsage -gt $threshold) {
 
 ### **🔧 Application/Script Development**
 1. **Start with template**: Create in appropriate `components/` directory
-2. **Use launcher**: `launchers/UniversalLauncher.ps1`
-3. **Reference shared functions**: Can use via launcher mechanism
+2. **Copy function patterns**: Copy needed functions from `shared-functions/` into your script
+3. **Use launcher**: `launchers/UniversalLauncher.ps1` for deployment
 4. **Test with launcher**: Ensure auto-update functionality works
 5. **Deploy with launcher**: Use launcher in Datto RMM component
 
@@ -129,11 +129,11 @@ if ($diskUsage -gt $threshold) {
 - Self-contained monitor scripts with embedded functions
 
 ### **🎯 Decision Matrix:**
-| Component Type | Deployment Method | Dependencies | Performance Requirement |
-|----------------|------------------|--------------|------------------------|
-| **Monitor** | Direct (copy script) | None (self-contained) | <3 seconds |
-| **Application** | Launcher-based | Can use shared functions | <30 minutes |
-| **Script** | Launcher-based | Can use shared functions | Flexible |
+| Component Type | Deployment Method | Function Patterns | Performance Requirement |
+|----------------|------------------|-------------------|------------------------|
+| **Monitor** | Direct (copy script) | Copy/paste only (self-contained) | <3 seconds |
+| **Application** | Launcher-based | Copy/paste from shared-functions | <30 minutes |
+| **Script** | Launcher-based | Copy/paste from shared-functions | Flexible |
 
 ## 💡 **Why This Architecture Works**
 

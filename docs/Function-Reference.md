@@ -424,7 +424,7 @@ All functions include comprehensive error handling and will:
 
 ## Performance Considerations
 
-- Monitor scripts should use minimal shared functions for speed
-- Use `-UpdateCounters $false` in monitor scripts to avoid counter overhead
-- Cache is used automatically to minimize download time
-- Offline mode available for air-gapped environments
+- Monitor scripts should embed only minimal functions needed for speed
+- Use `-UpdateCounters $false` in monitor logging functions to avoid counter overhead
+- ⚠️ **DEPRECATED**: Cache system (modern scripts embed functions directly)
+- ⚠️ **DEPRECATED**: Offline mode (modern scripts are self-contained)

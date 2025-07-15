@@ -31,10 +31,9 @@ The script checks for these BSOD-related Event IDs:
 #### Create Datto RMM Component:
 1. **Component Name**: `Bluescreen Monitor`
 2. **Component Type**: `Monitors` (Custom Monitor)
-3. **Script Content**: Use `LaunchMonitor.ps1` launcher
+3. **Script Content**: Paste entire `BluescreenMonitor.ps1` script content directly
 4. **Environment Variables**:
    ```
-   ScriptName = BluescreenMonitor.ps1
    DaysToCheck = 7
    IncludeDetails = true
    ```
@@ -192,7 +191,7 @@ IncludeDetails = true
 
 ### Component Creation Checklist:
 - [ ] Component Type: Monitors (Custom Monitor)
-- [ ] Script uses LaunchMonitor.ps1 launcher
+- [ ] Script content pasted directly (no launcher needed)
 - [ ] Environment variables configured
 - [ ] Alert priority set to High
 - [ ] Test execution on sample device

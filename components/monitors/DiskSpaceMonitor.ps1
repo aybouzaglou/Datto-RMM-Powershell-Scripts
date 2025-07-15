@@ -62,33 +62,31 @@ param(
 #                                         Initial Setup                                                    #
 ############################################################################################################
 
-# Load shared functions if available (fallback to standalone mode if not)
-if ($Global:RMMFunctionsLoaded) {
-    # Use shared logging but don't update counters for monitors
-    function Write-MonitorLog {
-        param([string]$Message, [string]$Level = 'Info')
-        Write-RMMLog $Message -Level $Level -UpdateCounters $false
-    }
-} else {
-    # Fallback logging function for monitors
-    function Write-MonitorLog {
-        param([string]$Message, [string]$Level = 'Info')
-        # Minimal logging for performance
-        # Don't write to console to avoid interfering with monitor output
+# Embedded logging function for monitors (copied from shared-functions/EmbeddedMonitorFunctions.ps1)
+function Write-MonitorLog {
+    param([string]$Message, [string]$Level = 'Info')
+    # Minimal logging for performance - don't write to console to avoid interfering with monitor output
+    # This is embedded for maximum reliability and performance
+}
+
+# Embedded environment variable function (copied from shared-functions/EmbeddedMonitorFunctions.ps1)
+function Get-RMMVariable {
+    param([string]$Name, [string]$Type = "String", $Default = $null)
+
+    $value = [Environment]::GetEnvironmentVariable($Name)
+    if ([string]::IsNullOrEmpty($value)) { return $Default }
+
+    switch ($Type) {
+        "Integer" { try { return [int]$value } catch { return $Default } }
+        "Boolean" { return ($value -eq "true" -or $value -eq "1" -or $value -eq "yes") }
+        default { return $value }
     }
 }
 
-# Get environment variables using shared functions if available
-if ($Global:RMMFunctionsLoaded -and (Get-Command Get-RMMVariable -ErrorAction SilentlyContinue)) {
-    $WarningThreshold = Get-RMMVariable -Name "WarningThreshold" -Type "Integer" -Default $WarningThreshold
-    $CriticalThreshold = Get-RMMVariable -Name "CriticalThreshold" -Type "Integer" -Default $CriticalThreshold
-    $DriveLetters = Get-RMMVariable -Name "DriveLetters" -Type "String" -Default $DriveLetters
-} else {
-    # Fallback environment variable handling
-    if ($env:WarningThreshold) { $WarningThreshold = [int]$env:WarningThreshold }
-    if ($env:CriticalThreshold) { $CriticalThreshold = [int]$env:CriticalThreshold }
-    if ($env:DriveLetters) { $DriveLetters = $env:DriveLetters }
-}
+# Get environment variables using embedded function
+$WarningThreshold = Get-RMMVariable -Name "WarningThreshold" -Type "Integer" -Default $WarningThreshold
+$CriticalThreshold = Get-RMMVariable -Name "CriticalThreshold" -Type "Integer" -Default $CriticalThreshold
+$DriveLetters = Get-RMMVariable -Name "DriveLetters" -Type "String" -Default $DriveLetters
 
 ############################################################################################################
 #                                    Monitor Logic                                                        #
@@ -168,27 +166,17 @@ try {
     # Add threshold information to message
     $message += " [Thresholds: Warning<${WarningThreshold}%, Critical<${CriticalThreshold}%]"
     
-    # Output monitor result using shared function if available
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Write-RMMMonitorResult -ErrorAction SilentlyContinue)) {
-        Write-RMMMonitorResult -Status $status -Message $message -ExitCode $exitCode
-    } else {
-        # Fallback monitor output
-        Write-Host "<-Start Result->"
-        Write-Host "${status}: $message"
-        Write-Host "<-End Result->"
-        exit $exitCode
-    }
+    # Embedded monitor result function (copied from shared-functions/EmbeddedMonitorFunctions.ps1)
+    Write-Host "<-Start Result->"
+    Write-Host "${status}: $message"
+    Write-Host "<-End Result->"
+    exit $exitCode
     
 } catch {
-    # Critical error in monitor
+    # Critical error in monitor - embedded error handling
     $errorMessage = "Monitor script failed: $($_.Exception.Message)"
-    
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Write-RMMMonitorResult -ErrorAction SilentlyContinue)) {
-        Write-RMMMonitorResult -Status "CRITICAL" -Message $errorMessage -ExitCode 1
-    } else {
-        Write-Host "<-Start Result->"
-        Write-Host "CRITICAL: $errorMessage"
-        Write-Host "<-End Result->"
-        exit 1
-    }
+    Write-Host "<-Start Result->"
+    Write-Host "CRITICAL: $errorMessage"
+    Write-Host "<-End Result->"
+    exit 1
 }

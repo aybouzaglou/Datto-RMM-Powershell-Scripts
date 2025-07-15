@@ -20,11 +20,11 @@ You can start using the new architecture immediately:
 - `components/Applications/ScanSnapHome.ps1` - Enhanced ScanSnap installer
 - `components/Monitors/DiskSpaceMonitor.ps1` - Example monitor script
 
-**Option B: Use Universal Launchers**
-- `launchers/UniversalLauncher.ps1` - Works with any component category
+**Option B: Use Launchers (Applications & Scripts Only)**
+- `launchers/UniversalLauncher.ps1` - Works with Applications & Scripts
 - `launchers/LaunchInstaller.ps1` - Optimized for Applications components
-- `launchers/LaunchMonitor.ps1` - Optimized for Monitors components
 - `launchers/LaunchScripts.ps1` - Optimized for Scripts components
+- **Note**: Monitors use direct deployment (paste script content directly)
 
 ## Datto RMM Component Configuration
 
@@ -85,17 +85,15 @@ $LauncherPath = "$env:TEMP\LaunchInstaller.ps1"
 exit $LASTEXITCODE
 ```
 
-#### Monitor Scripts
+#### Monitor Scripts (Direct Deployment)
 ```powershell
-# Monitor Launcher
-$LauncherURL = "https://raw.githubusercontent.com/aybouzaglou/Datto-RMM-Powershell-Scripts/main/launchers/LaunchMonitor.ps1"
-$LauncherPath = "$env:TEMP\LaunchMonitor.ps1"
+# ⚠️ DEPRECATED: Monitor launchers are no longer recommended
+# Modern approach: Paste the entire monitor script content directly into the component
+# This provides maximum performance and reliability for monitors
 
-[Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject([Net.SecurityProtocolType], 3072)
-(New-Object System.Net.WebClient).DownloadFile($LauncherURL, $LauncherPath)
-
-& $LauncherPath -ScriptName $env:ScriptName
-exit $LASTEXITCODE
+# For existing monitor scripts, copy the entire script content from:
+# components/monitors/YourMonitor.ps1
+# and paste it directly into the Datto RMM component script field
 ```
 
 ## Migration Strategy
@@ -245,20 +243,18 @@ if ($Global:RMMFunctionsLoaded) {
 
 ### Common Issues and Solutions
 
-#### Functions Not Loading
-**Symptoms**: Scripts run but don't use enhanced features
-**Solutions**:
+#### ⚠️ DEPRECATED: Functions Not Loading
+**Note**: Modern scripts use embedded functions, so this issue no longer applies.
+**Legacy Solutions** (for old scripts only):
 - Check internet connectivity
 - Verify repository URL is accessible
-- Use `-ForceDownload` to refresh cache
 - Check Windows Defender/antivirus blocking
 
-#### Cache Issues
-**Symptoms**: Old function versions being used
-**Solutions**:
+#### ⚠️ DEPRECATED: Cache Issues
+**Note**: Modern scripts don't use caching - functions are embedded directly.
+**Legacy Solutions** (for old scripts only):
 - Use `-ForceDownload` parameter
 - Clear cache directory: `C:\Users\*\AppData\Local\Temp\RMM-Functions`
-- Check cache expiry settings
 
 #### Timeout Errors
 **Symptoms**: Scripts fail with timeout messages
@@ -295,9 +291,9 @@ if ($Global:RMMFunctionsLoaded) {
 
 ### Troubleshooting
 - Check transcript logs for detailed execution information
-- Use `$Global:RMMFunctionsStatus` for function loading diagnostics
+- ⚠️ **DEPRECATED**: `$Global:RMMFunctionsStatus` (modern scripts use embedded functions)
 - Review Git commit history for recent changes
-- Test with `-OfflineMode` to isolate network issues
+- ⚠️ **DEPRECATED**: `-OfflineMode` (modern scripts don't need network dependencies)
 
 ### Getting Help
 - Review the function reference for usage examples

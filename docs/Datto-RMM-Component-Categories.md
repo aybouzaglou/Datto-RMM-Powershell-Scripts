@@ -119,7 +119,7 @@ Datto RMM organizes automation into three distinct component categories, each wi
 
 **Repository Location**: `components/Monitors/`
 
-**Launcher**: `launchers/LaunchMonitor.ps1` (optimized for speed)
+**Deployment**: Direct deployment only (paste script content directly)
 
 **Example Scripts**:
 - `DiskSpaceMonitor.ps1` - Disk space threshold monitoring
@@ -185,12 +185,12 @@ Datto RMM organizes automation into three distinct component categories, each wi
 
 ## Architecture Integration
 
-### Launcher Mapping
+### Deployment Mapping
 ```
-Applications → LaunchInstaller.ps1
-Monitors     → LaunchMonitor.ps1
-Scripts      → LaunchScripts.ps1
-Universal    → UniversalLauncher.ps1 (works with all categories)
+Applications → LaunchInstaller.ps1 (launcher-based)
+Monitors     → Direct deployment (paste script content)
+Scripts      → LaunchScripts.ps1 (launcher-based)
+Universal    → UniversalLauncher.ps1 (Applications & Scripts only)
 ```
 
 ### Environment Variables
@@ -198,11 +198,11 @@ All launchers accept:
 - `ScriptName`: Name of the script file to execute
 - `ScriptType`: Component category ("Applications", "Monitors", "Scripts")
 
-### Shared Function Library
-All categories benefit from the shared function library:
-- **Applications**: Extended logging, software detection, installation helpers
-- **Monitors**: Minimal overhead functions, result formatting
-- **Scripts**: Full function suite for complex operations
+### Shared Function Patterns (Copy/Paste Reference)
+All categories benefit from shared function patterns as copy/paste references:
+- **Applications**: Copy logging, software detection, installation helper patterns
+- **Monitors**: Copy minimal overhead functions directly into script (no dependencies)
+- **Scripts**: Copy any function patterns needed for complex operations
 
 ## Migration Considerations
 
@@ -226,7 +226,7 @@ If migrating from generic categories:
 2. **Consider execution frequency** - Monitors run continuously/frequently
 3. **Plan for timeout requirements** - Monitors must complete in <3 seconds
 4. **Use appropriate launchers** - Each category has optimized launchers
-5. **Leverage shared functions** - Consistent behavior across categories
+5. **Copy proven function patterns** - Use shared-functions/ as reference library (copy/paste only)
 6. **Monitor category decision is permanent** - Choose carefully as you cannot convert to Applications/Scripts later
 
 ## Component Creation Examples
@@ -243,8 +243,8 @@ Environment Variables: ScriptName, any installer-specific settings
 ```
 Component Name: Disk Space Monitor
 Component Type: Monitors (Custom Monitor)
-Script Content: [LaunchMonitor.ps1 with ScriptName="DiskSpaceMonitor.ps1"]
-Environment Variables: ScriptName, WarningThreshold, CriticalThreshold
+Script Content: [Paste entire DiskSpaceMonitor.ps1 script content directly]
+Environment Variables: WarningThreshold, CriticalThreshold (accessed via embedded Get-RMMVariable)
 ```
 
 ### Scripts Component

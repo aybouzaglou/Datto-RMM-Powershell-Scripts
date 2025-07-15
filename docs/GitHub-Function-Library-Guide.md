@@ -56,15 +56,14 @@ your-rmm-scripts/
 │   │   ├── NetworkUtils.ps1        # Network operations and downloads
 │   │   ├── FileOperations.ps1      # File and directory operations
 │   │   └── RegistryHelpers.ps1     # Registry operations and software detection
-│   └── SharedFunctions.ps1         # Master loader with caching
+
 ├── components/
 │   ├── Monitors/                   # System health monitoring (<3 seconds, immutable)
 │   ├── Applications/               # Software deployment and installation
 │   └── Scripts/                    # General automation and maintenance
 ├── launchers/
-│   ├── UniversalLauncher.ps1       # Universal script launcher
+│   ├── UniversalLauncher.ps1       # Universal script launcher (Applications & Scripts)
 │   ├── LaunchInstaller.ps1         # Applications component launcher
-│   ├── LaunchMonitor.ps1           # Monitors component launcher
 │   └── LaunchScripts.ps1           # Scripts component launcher
 └── docs/
     ├── GitHub-Function-Library-Guide.md
@@ -138,11 +137,10 @@ The launcher system provides automatic script downloading and function loading:
 - Reboot handling (exit codes 3010/1641)
 - Post-installation verification
 
-#### **LaunchMonitor.ps1**
-- Fast execution (3-second timeout)
-- Monitor result markers for Custom Monitor components
-- Minimal logging for performance
-- Proper exit code handling (0=OK, non-zero=Alert)
+#### **⚠️ DEPRECATED: LaunchMonitor.ps1**
+- **No longer recommended** - Use direct deployment for monitors instead
+- Direct deployment provides better performance and reliability
+- Modern monitors embed all needed functions directly
 
 #### **LaunchMaintenance.ps1**
 - Extended timeout for long-running operations

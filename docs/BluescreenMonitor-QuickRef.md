@@ -2,14 +2,13 @@
 
 ## 📋 Component Setup (Copy/Paste Ready)
 
-### Dedicated Monitor Component
+### Dedicated Monitor Component (Direct Deployment)
 ```
 Component Name: Bluescreen Monitor
 Component Type: Monitors (Custom Monitor)
-Script Content: [Use LaunchMonitor.ps1]
+Script Content: [Paste entire BluescreenMonitor.ps1 script content directly]
 
 Environment Variables:
-ScriptName = BluescreenMonitor.ps1
 DaysToCheck = 7
 IncludeDetails = true
 ```
