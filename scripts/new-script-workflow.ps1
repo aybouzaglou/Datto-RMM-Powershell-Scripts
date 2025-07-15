@@ -164,18 +164,45 @@ try {
         `$exitCode = 0
     }
     
-    # Required result markers for Custom Monitor
-    Write-Host "<-Start Result->"
-    Write-Host "`$status`: `$message"
-    Write-Host "<-End Result->"
-    
-    exit `$exitCode
-    
+    # Production-grade monitor pattern with diagnostic-first design
+
+    # Centralized alert function
+    function Write-MonitorAlert {
+        param([string]`$Message)
+        Write-Host '<-End Diagnostic->'
+        Write-Host '<-Start Result->'
+        Write-Host "X=`$Message"
+        Write-Host '<-End Result->'
+        exit 1
+    }
+
+    # Start diagnostic phase
+    Write-Host '<-Start Diagnostic->'
+    Write-Host "Monitor Name: Processing information"
+    Write-Host "Debug mode: `$(`$env:DebugMode -eq 'true')"
+    Write-Host "-------------------------"
+
+    # Your monitoring logic here with diagnostic output
+    Write-Host "- Checking system requirements..."
+    Write-Host "- Processing data..."
+
+    # Example result logic
+    if (`$errorCondition) {
+        Write-Host "! ALERT: Problem detected"
+        Write-MonitorAlert "CRITICAL: Your error message here"
+    } else {
+        Write-Host "- System appears healthy"
+        Write-Host '<-End Diagnostic->'
+        Write-Host '<-Start Result->'
+        Write-Host "OK: Your success message here"
+        Write-Host '<-End Result->'
+        exit 0
+    }
+
 } catch {
-    Write-Host "<-Start Result->"
-    Write-Host "CRITICAL: Monitor script error - `$(`$_.Exception.Message)"
-    Write-Host "<-End Result->"
-    exit 31
+    Write-Host "! CRITICAL ERROR: Monitor execution failed"
+    Write-Host "  Exception: `$(`$_.Exception.Message)"
+    Write-MonitorAlert "CRITICAL: Monitor script error - `$(`$_.Exception.Message)"
 }
 "@
         }

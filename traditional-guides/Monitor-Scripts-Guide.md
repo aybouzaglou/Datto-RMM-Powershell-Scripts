@@ -18,28 +18,44 @@ Before deploying a monitor, verify:
 
 ## Monitor Output Format Requirements
 
-### Result Markers (REQUIRED for ALL Monitors)
-**All monitors we create are Custom Monitor components**, so result markers are **ALWAYS REQUIRED**:
+### **Production-Grade Monitor Architecture (Based on Datto's Official Patterns)**
 
+**Datto's official monitors use a sophisticated two-phase architecture** that prioritizes troubleshooting and operational reliability:
+
+#### **Phase 1: Diagnostic Output (REQUIRED for Production Monitors)**
 ```powershell
-Write-Host "<-Start Result->"
-Write-Host "ALERT: C: drive low – 15.2 GB free"
-Write-Host "<-End Result->"
+Write-Host '<-Start Diagnostic->'
+Write-Host "Monitor Name: Diagnostic information"
+Write-Host "Debug mode: $debugMode"
+Write-Host "-------------------------"
+
+# All processing and validation happens here
+Write-Host "- Checking system requirements..."
+Write-Host "- Processing data..."
+Write-Host "- Validation results: $results"
+
+Write-Host '<-End Diagnostic->'
 ```
 
-**Why they exist:**
-- Datto RMM captures all STDOUT, but monitors need concise status text
-- Markers let RMM strip away log chatter and show only the delimited text in the "Result" column
-- Allows meaningful context for technicians while evaluating exit codes separately
+#### **Phase 2: Result Output (REQUIRED for ALL Monitors)**
+```powershell
+Write-Host '<-Start Result->'
+Write-Host "OK: System is healthy"
+Write-Host '<-End Result->'
+```
 
-⚠️ **CRITICAL**: Without these markers, the Result field will be blank in the RMM interface!
+**Why This Architecture Works:**
+- **Troubleshooting Priority**: When monitors fail, techs get immediate diagnostic context
+- **Reduces Support Tickets**: Rich diagnostic output eliminates "what happened?" calls
+- **Audit Trail**: Every execution leaves detailed record of what was checked
+- **Performance Transparency**: Shows processing steps to identify bottlenecks
+- **Operational Reliability**: Separates diagnostic info from alert status
 
-#### **Write-Host vs Write-Output for Monitors**
-- **✅ RECOMMENDED**: `Write-Host` - All official Datto RMM monitor examples use Write-Host
-- **✅ ALSO WORKS**: `Write-Output` - Both go to streams that Datto RMM captures
-- **⚠️ CRITICAL**: Use **only one** consistently - don't mix them in the same script
-- **🚫 NEVER**: Use Write-Host anywhere else in the script - only for the three result lines
-- **✅ BEST PRACTICE**: Route all other output through logging functions that don't pollute console
+#### **Write-Host Consistency (Critical)**
+- **✅ REQUIRED**: Use `Write-Host` exclusively - Datto's official monitors use only Write-Host
+- **🚫 NEVER MIX**: Don't combine Write-Host and Write-Output in the same monitor
+- **✅ SINGLE STREAM**: Ensures predictable parsing and no "no data" issues
+- **✅ UNIFIED FORMATTING**: All output appears in same RMM interface section
 
 ### Exit Codes for Custom Monitor Components
 **Important**: Custom Monitor components have different exit code behavior than regular scripts:
@@ -55,45 +71,139 @@ Write-Host "<-End Result->"
 - Alert severity is controlled by the monitor's "Alert Priority" setting, not the exit code
 - The job itself still shows "Completed" in Job History; only the monitor health changes
 
+## **Production-Grade Monitor Patterns (Based on Datto's Architecture)**
+
+### **1. Centralized Alert Function Pattern**
+```powershell
+function Write-MonitorAlert {
+    param([string]$Message)
+
+    Write-Host '<-End Diagnostic->'
+    Write-Host '<-Start Result->'
+    Write-Host "X=$Message"
+    Write-Host '<-End Result->'
+    exit 1
+}
+```
+
+**Why This Works:**
+- **Prevents Orphaned Diagnostics**: Always properly closes diagnostic section
+- **Consistency Enforcement**: Impossible to forget result markers
+- **Error State Clarity**: Every alert follows same format
+- **Maintainability**: One place to change alert behavior
+
+### **2. Defensive File Operations Pattern**
+```powershell
+# Clean up previous run artifacts
+if (Test-Path "monitor-data.txt") {
+    Write-Host "- Removing previous monitor data file"
+    Remove-Item "monitor-data.txt" -Force -ErrorAction SilentlyContinue
+}
+
+# Preserve debug files when needed
+if ($debugMode) {
+    Write-Host "- Debug mode enabled: Preserving diagnostic files"
+} else {
+    Write-Host "- Debug mode disabled: Cleaning up temporary files"
+    Remove-Item "*.tmp" -Force -ErrorAction SilentlyContinue
+}
+```
+
+### **3. Multi-Layer Validation Pattern**
+```powershell
+Write-Host '<-Start Diagnostic->'
+Write-Host "System Validation Monitor"
+Write-Host "Debug mode: $debugMode"
+Write-Host "-------------------------"
+
+# Layer 1: OS Requirements
+Write-Host "- Checking OS requirements..."
+if ([int](Get-WmiObject Win32_OperatingSystem).BuildNumber -lt 9200) {
+    Write-MonitorAlert "ERROR: Unsupported OS version. Windows Server 2012+ required."
+}
+
+# Layer 2: Service Dependencies
+Write-Host "- Checking required services..."
+if (-not (Get-Service "RequiredService" -ErrorAction SilentlyContinue)) {
+    Write-MonitorAlert "ERROR: Required service not found."
+}
+
+# Layer 3: Main Function
+Write-Host "- Performing main checks..."
+# Your monitoring logic here
+
+Write-Host '<-End Diagnostic->'
+Write-Host '<-Start Result->'
+Write-Host "OK: All systems operational"
+Write-Host '<-End Result->'
+```
+
 ## Complete Monitor Examples
 
-### Basic Monitor Example
-All our monitors are Custom Monitor components, so they always require result markers:
+### Enhanced Monitor Example (Production Pattern)
+Following Datto's official architecture with diagnostic-first design:
 
 ```powershell
-# Monitor: Disk Space Check
+# Monitor: Disk Space Check (Production Pattern)
 [CmdletBinding()]
 param(
     [string]$DriveLetter = $env:DriveLetter ?? "C",
     [int]$WarningGB = $env:WarningGB ?? 20,
-    [int]$CriticalGB = $env:CriticalGB ?? 10
+    [int]$CriticalGB = $env:CriticalGB ?? 10,
+    [bool]$DebugMode = $env:DebugMode -eq 'true'
 )
 
+# Centralized alert function
+function Write-MonitorAlert {
+    param([string]$Message)
+    Write-Host '<-End Diagnostic->'
+    Write-Host '<-Start Result->'
+    Write-Host "X=$Message"
+    Write-Host '<-End Result->'
+    exit 1
+}
+
+# Start diagnostic phase
+Write-Host '<-Start Diagnostic->'
+Write-Host "Disk Space Monitor: Checking drive $DriveLetter"
+Write-Host "Debug mode: $DebugMode"
+Write-Host "Thresholds: Warning=${WarningGB}GB, Critical=${CriticalGB}GB"
+Write-Host "-------------------------"
+
 try {
+    # Validation layer
+    Write-Host "- Validating drive letter format..."
+    if ($DriveLetter -notmatch '^[A-Z]$') {
+        Write-MonitorAlert "ERROR: Invalid drive letter format: $DriveLetter"
+    }
+
+    # Main check
+    Write-Host "- Checking drive $DriveLetter availability..."
     $Drive = Get-PSDrive $DriveLetter -ErrorAction Stop
     $FreeGB = [math]::Round($Drive.Free / 1GB, 1)
+    $TotalGB = [math]::Round($Drive.Used / 1GB + $Drive.Free / 1GB, 1)
 
-    if ($FreeGB -lt $CriticalGB) {
-        Write-Host "<-Start Result->"
-        Write-Host "CRITICAL: $DriveLetter`: drive low – $FreeGB GB free"
-        Write-Host "<-End Result->"
-        exit 1  # Any non-zero triggers alert
-    } elseif ($FreeGB -lt $WarningGB) {
-        Write-Host "<-Start Result->"
-        Write-Host "WARNING: $DriveLetter`: drive getting low – $FreeGB GB free"
-        Write-Host "<-End Result->"
-        exit 1  # Any non-zero triggers alert
+    Write-Host "- Drive stats: ${FreeGB}GB free of ${TotalGB}GB total"
+
+    # Evaluate results
+    if ($FreeGB -le $CriticalGB) {
+        Write-Host "! CRITICAL threshold exceeded"
+        Write-MonitorAlert "CRITICAL: Drive $DriveLetter has only $FreeGB GB free (threshold: ${CriticalGB}GB)"
+    } elseif ($FreeGB -le $WarningGB) {
+        Write-Host "! WARNING threshold exceeded"
+        Write-MonitorAlert "WARNING: Drive $DriveLetter has only $FreeGB GB free (threshold: ${WarningGB}GB)"
     } else {
-        Write-Host "<-Start Result->"
-        Write-Host "OK: $DriveLetter`: drive healthy – $FreeGB GB free"
-        Write-Host "<-End Result->"
-        exit 0  # Only 0 = OK/Green
+        Write-Host "- Drive space within acceptable limits"
+        Write-Host '<-End Diagnostic->'
+        Write-Host '<-Start Result->'
+        Write-Host "OK: Drive $DriveLetter has $FreeGB GB free of ${TotalGB}GB total"
+        Write-Host '<-End Result->'
+        exit 0
     }
 } catch {
-    Write-Host "<-Start Result->"
-    Write-Host "ERROR: Cannot check drive $DriveLetter`: - $($_.Exception.Message)"
-    Write-Host "<-End Result->"
-    exit 1  # Any non-zero triggers alert
+    Write-Host "! ERROR: Failed to check drive $DriveLetter"
+    Write-Host "  Exception: $($_.Exception.Message)"
+    Write-MonitorAlert "CRITICAL: Cannot access drive $DriveLetter - $($_.Exception.Message)"
 }
 ```
 

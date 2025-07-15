@@ -58,6 +58,14 @@ Datto RMM organizes automation into three distinct component categories, each wi
 - Designed for frequent execution (every few minutes)
 - Component category cannot be changed after creation (but content can be edited)
 
+**Production-Grade Architecture** (Based on Datto's Official Patterns):
+- **Diagnostic-First Design**: Use `<-Start Diagnostic->` and `<-End Diagnostic->` markers
+- **Single Output Stream**: Use Write-Host exclusively (never mix with Write-Output)
+- **Centralized Alert Functions**: Prevent orphaned diagnostics with consistent alert patterns
+- **Multi-Layer Validation**: OS requirements → Service dependencies → Main function
+- **Defensive File Operations**: Clean up previous runs, preserve debug files when needed
+- **Graceful Degradation**: Continue primary function even if non-critical parts fail
+
 **Use Cases**:
 - Disk space monitoring
 - Service status checks
