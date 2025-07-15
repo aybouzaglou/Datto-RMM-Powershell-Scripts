@@ -172,6 +172,13 @@ jobs:
             } else {
               # Write-Host with result markers is correct for Datto RMM monitors
               Write-Output "  ✅ Monitor correctly uses Write-Host with result markers"
+
+              # Check for production-grade diagnostic architecture
+              if ($content -match '<-Start Diagnostic->.*<-End Diagnostic->') {
+                Write-Output "  ✅ Monitor uses production-grade diagnostic-first architecture"
+              } else {
+                Write-Warning "  ⚠️  Monitor missing diagnostic markers (recommended for production)"
+              }
             }
           } elseif ($content -match 'Write-Host' -and $relativePath -notlike "*Monitors*") {
             Write-Warning "  ⚠️  Non-monitor script uses Write-Host (consider Write-Output)"
@@ -258,7 +265,113 @@ jobs:
           }
         }
         
-    - name: 🎯 Validate Component Categories
+    - name: �️ Validate Production-Grade Monitor Architecture
+      shell: pwsh
+      run: |
+        Write-Output "🚀 === DIRECT DEPLOYMENT MONITOR ARCHITECTURE VALIDATION ==="
+        Write-Output ""
+
+        $monitorScripts = Get-ChildItem -Path "components/monitors" -Filter "*.ps1" -ErrorAction SilentlyContinue
+        $architectureIssues = 0
+        $performanceIssues = 0
+
+        if ($monitorScripts) {
+          Write-Output "Found $($monitorScripts.Count) monitor scripts to validate for direct deployment architecture"
+          Write-Output ""
+
+          foreach ($script in $monitorScripts) {
+            Write-Output "🔍 Analyzing: $($script.Name)"
+            $content = Get-Content $script.FullName -Raw
+
+            # Check for direct deployment architecture
+            $hasResultMarkers = ($content -match '<-Start Result->' -and $content -match '<-End Result->')
+            $hasDiagnosticMarkers = ($content -match '<-Start Diagnostic->' -and $content -match '<-End Diagnostic->')
+            $hasEmbeddedFunctions = ($content -match 'function Get-RMMVariable' -and $content -match 'function Write-MonitorAlert')
+            $hasExternalDependencies = ($content -match 'Invoke-WebRequest|Invoke-RestMethod|dot-sourcing|\. \$')
+            $hasLauncherPattern = ($content -match 'LaunchMonitor|GitHub.*download')
+            $hasPerformanceTiming = ($content -match 'Stopwatch|ElapsedMilliseconds')
+
+            # Required architecture checks
+            if ($hasResultMarkers) {
+              Write-Output "  ✅ Required result markers present"
+            } else {
+              Write-Output "  ❌ Missing required result markers"
+              $architectureIssues++
+            }
+
+            if ($hasDiagnosticMarkers) {
+              Write-Output "  ✅ Production diagnostic markers present"
+            } else {
+              Write-Output "  ⚠️  Missing diagnostic markers (recommended for production)"
+            }
+
+            # Direct deployment specific checks
+            if ($hasEmbeddedFunctions) {
+              Write-Output "  ✅ Embedded functions detected (direct deployment pattern)"
+            } else {
+              Write-Output "  ⚠️  Missing embedded functions (may indicate launcher dependency)"
+            }
+
+            if ($hasExternalDependencies) {
+              Write-Output "  ❌ External dependencies detected (violates direct deployment)"
+              $architectureIssues++
+            } else {
+              Write-Output "  ✅ Zero external dependencies (direct deployment compliant)"
+            }
+
+            if ($hasLauncherPattern) {
+              Write-Output "  ❌ Launcher pattern detected (monitors should use direct deployment)"
+              $architectureIssues++
+            } else {
+              Write-Output "  ✅ No launcher patterns (direct deployment compliant)"
+            }
+
+            if ($hasPerformanceTiming) {
+              Write-Output "  ✅ Performance timing implemented"
+            } else {
+              Write-Output "  ⚠️  Missing performance timing (recommended for optimization)"
+            }
+
+            # Performance optimization checks
+            $hasWin32Product = ($content -match 'Win32_Product')
+            $hasOptimizedQueries = ($content -match 'FilterHashtable|ErrorAction.*SilentlyContinue')
+
+            if ($hasWin32Product) {
+              Write-Output "  ❌ Win32_Product usage detected (performance killer)"
+              $performanceIssues++
+            } else {
+              Write-Output "  ✅ No Win32_Product usage (performance optimized)"
+            }
+
+            if ($hasOptimizedQueries) {
+              Write-Output "  ✅ Optimized query patterns detected"
+            } else {
+              Write-Output "  ⚠️  Consider using optimized query patterns"
+            }
+
+            Write-Output ""
+          }
+
+          # Summary
+          Write-Output "📊 VALIDATION SUMMARY:"
+          Write-Output "  Architecture Issues: $architectureIssues"
+          Write-Output "  Performance Issues: $performanceIssues"
+          Write-Output ""
+
+          if ($architectureIssues -gt 0) {
+            Write-Output "❌ Found $architectureIssues critical architecture issues"
+            exit 1
+          } elseif ($performanceIssues -gt 0) {
+            Write-Output "⚠️  Found $performanceIssues performance issues (warnings only)"
+            Write-Output "✅ All monitors meet minimum direct deployment requirements"
+          } else {
+            Write-Output "✅ All monitors meet direct deployment and performance requirements"
+          }
+        } else {
+          Write-Output "ℹ️  No monitor scripts found to validate"
+        }
+
+    - name: �🎯 Validate Component Categories
       shell: pwsh
       run: |
         Write-Output "=== Validating Component Categories ==="
@@ -278,11 +391,34 @@ jobs:
               # Check for Monitor-specific requirements
               if ($category -eq "Monitors") {
                 $content = Get-Content $script.FullName -Raw
+
+                # Required result markers
                 if ($content -notmatch '<-Start Result->' -or $content -notmatch '<-End Result->') {
-                  Write-Output "    ❌ Monitor missing result markers"
+                  Write-Output "    ❌ Monitor missing required result markers"
                   $errors++
                 } else {
                   Write-Output "    ✅ Monitor has required result markers"
+                }
+
+                # Production-grade diagnostic architecture (recommended)
+                if ($content -match '<-Start Diagnostic->' -and $content -match '<-End Diagnostic->') {
+                  Write-Output "    ✅ Monitor uses production-grade diagnostic architecture"
+
+                  # Check for centralized alert function
+                  if ($content -match 'function.*Write-MonitorAlert|Write-MonitorAlert') {
+                    Write-Output "    ✅ Monitor has centralized alert function"
+                  } else {
+                    Write-Output "    ⚠️  Monitor missing centralized alert function (recommended)"
+                  }
+
+                  # Check for detailed diagnostic output
+                  if ($content -match 'Write-Host.*-.*Checking|Write-Host.*-.*Processing|Write-Host.*-.*Validating') {
+                    Write-Output "    ✅ Monitor provides detailed diagnostic output"
+                  } else {
+                    Write-Output "    ⚠️  Monitor diagnostic section lacks detailed output"
+                  }
+                } else {
+                  Write-Output "    ⚠️  Monitor missing diagnostic markers (recommended for production)"
                 }
               }
               
@@ -473,7 +609,7 @@ jobs:
         Write-Output "  ✅ Performance Analysis"
         Write-Output "  ✅ Shared Functions Import Testing"
         Write-Output "  ✅ Component Category Validation"
-        Write-Output "  ✅ Monitor Result Marker Validation"
+        Write-Output "  ✅ Direct Deployment Monitor Architecture Validation"
         Write-Output "  ✅ Launcher Parameter Validation"
         Write-Output ""
         Write-Output "🏆 === QUALITY ASSESSMENT === 🏆"
@@ -531,7 +667,7 @@ jobs:
 
         ### Architecture Validation
         - ✅ Component Categories: PASSED
-        - ✅ Monitor Result Markers: PASSED
+        - ✅ Direct Deployment Monitor Architecture: PASSED
         - ✅ Shared Functions: PASSED
         - ✅ Launchers: PASSED
 

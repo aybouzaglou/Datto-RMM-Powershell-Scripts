@@ -152,8 +152,32 @@ if ($Full) {
             $issues += "Contains interactive elements (incompatible with Datto RMM)"
         }
         
-        if ($relativePath -like "*Monitors*" -and $content -notmatch 'exit \d+') {
-            $issues += "Monitor missing explicit exit codes"
+        # Monitor-specific validation (production-grade architecture)
+        if ($relativePath -like "*Monitors*") {
+            # Check for required result markers
+            if ($content -notmatch '<-Start Result->|<-End Result->') {
+                $issues += "Monitor missing required result markers (<-Start Result-> and <-End Result->)"
+            }
+
+            # Check for production-grade diagnostic markers (recommended)
+            if ($content -notmatch '<-Start Diagnostic->|<-End Diagnostic->') {
+                $issues += "Monitor missing diagnostic markers (recommended for production: <-Start Diagnostic-> and <-End Diagnostic->)"
+            }
+
+            # Check for explicit exit codes
+            if ($content -notmatch 'exit \d+') {
+                $issues += "Monitor missing explicit exit codes"
+            }
+
+            # Check for centralized alert function (production pattern)
+            if ($content -notmatch 'function.*Write-MonitorAlert|Write-MonitorAlert') {
+                $issues += "Monitor missing centralized alert function (recommended production pattern)"
+            }
+
+            # Check for diagnostic-first architecture
+            if ($content -match '<-Start Diagnostic->' -and $content -notmatch 'Write-Host.*-.*Checking|Write-Host.*-.*Processing|Write-Host.*-.*Validating') {
+                $issues += "Monitor has diagnostic markers but lacks detailed diagnostic output"
+            }
         }
         
         if ($issues.Count -gt 0) {

@@ -1,4 +1,4 @@
-# 🚀 Developer Workflow Guide - Never F*ck Up Again!
+# 🚀 Developer Workflow Guide - Never F*ck Up Again
 
 ## 🎯 **The Bulletproof Development Process**
 
@@ -7,6 +7,7 @@ This guide ensures **zero production issues** by combining validation, automatio
 ## 📋 **Quick Start: The Safe Way to Develop**
 
 ### **1. 🌿 Create Feature Branch**
+
 ```bash
 # For new scripts
 git checkout -b feature/new-awesome-script
@@ -19,6 +20,7 @@ git checkout -b enhancement/improve-monitor-performance
 ```
 
 ### **2. ✍️ Develop Your Script**
+
 - Write your PowerShell script in the appropriate directory:
   - `components/Applications/` - Software deployment scripts
   - `components/Monitors/` - System monitoring scripts  
@@ -27,12 +29,14 @@ git checkout -b enhancement/improve-monitor-performance
   - `launchers/` - Universal launcher scripts
 
 ### **3. 🔍 Local Quick Check (Optional but Recommended)**
+
 ```bash
 # Quick syntax check
 pwsh -Command "Get-ChildItem -Filter '*.ps1' -Recurse | ForEach-Object { try { [void][System.Management.Automation.PSParser]::Tokenize((Get-Content $_.FullName -Raw), [ref]$null); Write-Host '✅ $($_.Name)' } catch { Write-Error '❌ $($_.Name): $($_.Exception.Message)' } }"
 ```
 
 ### **4. 🚀 Push to Trigger Auto-PR**
+
 ```bash
 git add .
 git commit -m "Add new awesome PowerShell script for Datto RMM"
@@ -40,6 +44,7 @@ git push origin feature/new-awesome-script
 ```
 
 ### **5. 🤖 Automatic Magic Happens**
+
 1. **Auto-validation runs** (syntax + critical issues)
 2. **PR is automatically created** if validation passes
 3. **Gemini Code Assist reviews** your code
@@ -47,6 +52,7 @@ git push origin feature/new-awesome-script
 5. **You get feedback** and can iterate
 
 ### **6. ✅ Review & Merge**
+
 - Address any Gemini feedback
 - Ensure all validations pass
 - Merge when ready
@@ -55,17 +61,20 @@ git push origin feature/new-awesome-script
 ## 🛡️ **Safety Features Built-In**
 
 ### **🔍 Pre-PR Validation**
+
 - ✅ **Syntax checking** - No broken scripts
 - ✅ **Critical PSScriptAnalyzer** - No major issues
 - ❌ **Blocks PR creation** if critical errors found
 
 ### **🤖 AI Code Review**
+
 - 🧠 **Gemini Code Assist** reviews every PR
 - 🎯 **Datto RMM specific** feedback
 - 🔒 **Security considerations** highlighted
 - ⚡ **Performance suggestions** provided
 
 ### **🏆 Full Validation on PR**
+
 - 📋 **Complete syntax validation**
 - 🔍 **Advanced PSScriptAnalyzer analysis**
 - 🧠 **Semantic validation** (Datto RMM compatibility)
@@ -75,21 +84,27 @@ git push origin feature/new-awesome-script
 ## 🚨 **What Happens If You F*ck Up?**
 
 ### **❌ Syntax Errors**
+
 ```
 ❌ Found 2 syntax errors. Fix these before creating PR.
 ```
+
 **Solution**: Fix syntax errors and push again
 
 ### **❌ Critical PSScriptAnalyzer Issues**
+
 ```
 ❌ Found 3 critical PSScriptAnalyzer errors. Fix these first.
 ```
+
 **Solution**: Address critical issues and push again
 
 ### **❌ Datto RMM Compatibility Issues**
+
 ```
 ❌ Uses Win32_Product (banned in Datto RMM - triggers MSI repair)
 ```
+
 **Solution**: Remove banned operations and push again
 
 ## 🎯 **Branch Naming Convention**
@@ -123,6 +138,7 @@ graph TD
 ## 🏆 **Pro Tips for Success**
 
 ### **✅ Do This**
+
 - ✅ Use descriptive branch names
 - ✅ Write clear commit messages
 - ✅ Test scripts locally when possible
@@ -130,6 +146,7 @@ graph TD
 - ✅ Wait for full validation before merging
 
 ### **❌ Don't Do This**
+
 - ❌ Push directly to `main` branch
 - ❌ Ignore validation failures
 - ❌ Skip Gemini code review feedback
@@ -173,8 +190,9 @@ git push origin hotfix/critical-fix
 ## 🎉 **You're Now Bulletproof!**
 
 This workflow ensures you **never deploy broken scripts** to Datto RMM again. The combination of:
+
 - **Automated validation**
-- **AI code review** 
+- **AI code review**
 - **Comprehensive testing**
 - **Safety guardrails**
 

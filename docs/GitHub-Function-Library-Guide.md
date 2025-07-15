@@ -1,8 +1,27 @@
-# GitHub-Based Function Library for Datto RMM
+# GitHub-Based Function Library for Datto RMM - Hybrid Deployment Strategy
 
 ## Overview
 
-This repository implements a sophisticated GitHub-based function library architecture for Datto RMM PowerShell scripts. It provides centralized, version-controlled shared functions that automatically download and cache for improved reliability, maintainability, and enterprise-grade automation.
+This repository implements a **hybrid deployment architecture** that optimizes both performance and functionality:
+
+- **📊 Monitors**: Direct deployment with embedded functions for maximum performance (98.2% faster)
+- **🔧 Applications & Scripts**: GitHub-based function library for flexibility and automatic updates
+
+This sophisticated approach provides the best of both worlds: **blazing-fast monitors** and **flexible, maintainable Applications/Scripts**.
+
+## 🎯 Deployment Strategy Decision Matrix
+
+### **✅ Use Direct Deployment (Embedded Functions) For:**
+- **📊 Monitors**: All monitor components for maximum performance
+- **High-frequency execution**: Scripts running every 1-2 minutes
+- **Critical system monitoring**: Where reliability is paramount
+- **Performance-sensitive operations**: Where <200ms execution is required
+
+### **🔄 Use GitHub Function Library (Launcher-Based) For:**
+- **🔧 Applications**: Software deployment and installation
+- **📝 Scripts**: General automation and maintenance
+- **Complex operations**: Multi-step processes with extended timeouts
+- **Frequently updated logic**: Scripts requiring regular improvements
 
 ## Architecture Benefits
 

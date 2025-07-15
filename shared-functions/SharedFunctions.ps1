@@ -188,7 +188,7 @@ Write-RMMLog "Offline Mode: $OfflineMode" -Level Config
 $coreModules = @(
     @{ File = "RMMLogging.ps1"; Folder = "Core"; Functions = @("Write-RMMLog", "Start-RMMTranscript", "Stop-RMMTranscript", "Write-RMMMonitorResult", "Write-RMMEventLog") },
     @{ File = "RMMValidation.ps1"; Folder = "Core"; Functions = @("Get-RMMVariable", "Test-RMMVariable", "Invoke-RMMTimeout", "Test-RMMSystemRequirements", "Test-RMMInternetConnectivity") },
-    @{ File = "RMMSoftwareDetection.ps1"; Folder = "Core"; Functions = @("Get-RMMSoftware", "Test-RMMSoftwareInstalled", "Get-RMMManufacturer", "Remove-RMMSoftware") }
+    @{ File = "RMMSoftwareDetection.ps1"; Folder = "Core"; Functions = @("Get-RMMSoftware", "Test-RMMSoftwareInstalled", "Get-RMMManufacturer", "Get-RMMUserSoftware", "Test-RMMMultipleSoftware", "Remove-RMMSoftware") }
 )
 
 $utilityModules = @(
