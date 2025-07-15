@@ -255,12 +255,190 @@ if (-not $processRunning) { Write-MonitorAlert "Required process not running" }
 #>
 function Test-RMMProcess {
     param([string]$ProcessName)
-    
+
     try {
         $process = Get-Process $ProcessName -ErrorAction Stop
         return $process.Count -gt 0
     } catch {
         return $false
+    }
+}
+
+<#
+.SYNOPSIS
+Fast software detection for monitors (Datto expert pattern)
+
+.DESCRIPTION
+High-performance software detection optimized for monitor scripts.
+Based on expert Datto RMM patterns using registry scanning for speed.
+Embedded function - no external dependencies.
+
+.PARAMETER SoftwareName
+Software name to search for
+
+.PARAMETER SearchMethod
+Search method: "EQ" (alert if found), "NE" (alert if not found)
+
+.PARAMETER IncludeUserLevel
+Include user-level software installations
+
+.EXAMPLE
+$result = Test-MonitorSoftware -SoftwareName "Chrome" -SearchMethod "NE"
+if ($result.ShouldAlert) { Write-MonitorAlert $result.Message }
+#>
+function Test-MonitorSoftware {
+    param(
+        [string]$SoftwareName,
+        [string]$SearchMethod = "NE",
+        [switch]$IncludeUserLevel
+    )
+
+    $found = $false
+    $foundDetails = @()
+
+    try {
+        # Fast system-level search (Datto expert pattern)
+        $systemPaths = @(
+            "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+            "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+        )
+
+        foreach ($path in $systemPaths) {
+            if (Test-Path $path) {
+                Get-ChildItem $path -ErrorAction SilentlyContinue | ForEach-Object {
+                    $app = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
+                    if ($app.DisplayName -and $app.DisplayName -match [regex]::Escape($SoftwareName)) {
+                        $found = $true
+                        $foundDetails += "System-Level: $($app.DisplayName)"
+                    }
+                }
+            }
+        }
+
+        # User-level search if requested (Datto expert pattern)
+        if ($IncludeUserLevel -and -not $found) {
+            Get-ChildItem "Registry::HKEY_USERS\" -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer } | ForEach-Object {
+                foreach ($node in @("Software", "Software\WOW6432Node")) {
+                    $userPath = "Registry::$_\$node\Microsoft\Windows\CurrentVersion\Uninstall"
+                    if (Test-Path $userPath -ErrorAction SilentlyContinue) {
+                        try {
+                            $domainName = (Get-ItemProperty "Registry::$_\Volatile Environment" -Name USERDOMAIN -ErrorAction SilentlyContinue).USERDOMAIN
+                            $username = (Get-ItemProperty "Registry::$_\Volatile Environment" -Name USERNAME -ErrorAction SilentlyContinue).USERNAME
+
+                            Get-ChildItem $userPath -ErrorAction SilentlyContinue | ForEach-Object {
+                                $app = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
+                                if ($app.DisplayName -and $app.DisplayName -match [regex]::Escape($SoftwareName)) {
+                                    $found = $true
+                                    $userContext = if ($domainName -and $username) { "$domainName\$username" } else { "Unknown User" }
+                                    $foundDetails += "User-Level ($userContext): $($app.DisplayName)"
+                                }
+                            }
+                        } catch {
+                            # Skip problematic user profiles
+                            continue
+                        }
+                    }
+                }
+            }
+        }
+
+        # Apply alert logic (Datto expert pattern)
+        $shouldAlert = $false
+        $message = ""
+
+        if ($SearchMethod -eq "EQ" -and $found) {
+            $shouldAlert = $true
+            $message = "Software '$SoftwareName' is installed: $($foundDetails -join '; ')"
+        } elseif ($SearchMethod -eq "NE" -and -not $found) {
+            $shouldAlert = $true
+            $message = "Software '$SoftwareName' is not installed"
+        } else {
+            $message = if ($found) {
+                "Software '$SoftwareName' is installed: $($foundDetails -join '; ')"
+            } else {
+                "Software '$SoftwareName' is not installed"
+            }
+        }
+
+        return @{
+            Found = $found
+            ShouldAlert = $shouldAlert
+            Message = $message
+            Details = $foundDetails
+        }
+
+    } catch {
+        return @{
+            Found = $false
+            ShouldAlert = $true
+            Message = "Error checking software '$SoftwareName': $($_.Exception.Message)"
+            Details = @()
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Multi-software monitor check (Datto expert pattern)
+
+.DESCRIPTION
+Checks multiple software installations with configurable alert logic.
+Optimized for monitor scripts with embedded functionality.
+
+.PARAMETER SoftwareList
+Space-separated list of software names to check
+
+.PARAMETER SearchMethod
+Search method: "EQ" (alert if found), "NE" (alert if not found)
+
+.PARAMETER IncludeUserLevel
+Include user-level software installations
+
+.EXAMPLE
+$result = Test-MonitorMultipleSoftware -SoftwareList "Chrome Firefox Edge" -SearchMethod "NE"
+if ($result.ShouldAlert) { Write-MonitorAlert $result.Message }
+#>
+function Test-MonitorMultipleSoftware {
+    param(
+        [string]$SoftwareList,
+        [string]$SearchMethod = "NE",
+        [switch]$IncludeUserLevel
+    )
+
+    if (-not $SoftwareList) {
+        return @{
+            ShouldAlert = $true
+            Message = "No software specified for monitoring"
+            Results = @()
+        }
+    }
+
+    $softwareArray = $SoftwareList.Split() | ForEach-Object { $_.Replace("=", " ").Trim() } | Where-Object { $_ }
+    $results = @()
+    $alertMessages = @()
+    $overallAlert = $false
+
+    foreach ($software in $softwareArray) {
+        $result = Test-MonitorSoftware -SoftwareName $software -SearchMethod $SearchMethod -IncludeUserLevel:$IncludeUserLevel
+        $results += $result
+
+        if ($result.ShouldAlert) {
+            $overallAlert = $true
+            $alertMessages += $result.Message
+        }
+    }
+
+    $summary = "$($results.Count) software items checked"
+    $foundCount = ($results | Where-Object { $_.Found }).Count
+    if ($foundCount -gt 0) {
+        $summary += ", $foundCount found"
+    }
+
+    return @{
+        ShouldAlert = $overallAlert
+        Message = if ($alertMessages) { $alertMessages -join "; " } else { $summary }
+        Results = $results
+        Summary = $summary
     }
 }
 
