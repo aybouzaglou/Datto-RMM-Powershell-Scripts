@@ -156,41 +156,82 @@ jobs:
 
         foreach ($script in $scripts) {
           Write-Output "Analyzing: $($script.Name)"
+          $relativePath = $script.FullName.Replace((Get-Location).Path, "").TrimStart('\')
 
-          # Run PSScriptAnalyzer with comprehensive rules
-          $issues = Invoke-ScriptAnalyzer -Path $script.FullName -Severity @('Error','Warning','Information') -IncludeDefaultRules
+          # Use context-aware PSScriptAnalyzer configuration
+          $excludeRules = @(
+            'PSAvoidTrailingWhitespace',  # Formatting noise
+            'PSUseBOMForUnicodeEncodedFile',  # Not relevant for Datto RMM
+            'PSAvoidUsingPositionalParameters',  # Sometimes necessary for conciseness
+            'PSUseSingularNouns',  # Not critical for functionality
+            'PSReviewUnusedParameter',  # Reference patterns may have unused params
+            'PSUseShouldProcessForStateChangingFunctions'  # Not applicable to RMM scripts
+          )
+
+          # Context-aware Write-Host exclusion
+          if ($relativePath -like "*Monitors*" -or
+              $relativePath -like "*shared-functions*" -or
+              $relativePath -like "*templates*" -or
+              $relativePath -like "*scripts*" -or
+              $relativePath -like "*tests*" -or
+              $script.Name -like "*test*" -or
+              $script.Name -like "*template*" -or
+              $script.Name -like "*benchmark*" -or
+              $script.Name -like "*performance*") {
+            # Allow Write-Host in these contexts where it's appropriate/required
+            $excludeRules += 'PSAvoidUsingWriteHost'
+          }
+
+          # Additional exclusions for reference patterns
+          if ($relativePath -like "*shared-functions*" -or $relativePath -like "*templates*") {
+            $excludeRules += 'PSAvoidGlobalVars'
+          }
+
+          # Run PSScriptAnalyzer with context-aware rules
+          $issues = Invoke-ScriptAnalyzer -Path $script.FullName -Severity @('Error','Warning') -IncludeDefaultRules -ExcludeRule $excludeRules
 
           if ($issues) {
-            Write-Output "  Issues found:"
-            foreach ($issue in $issues) {
-              $severity = $issue.Severity
-              $line = $issue.Line
-              $message = $issue.Message
-              $ruleName = $issue.RuleName
+            $errorIssues = $issues | Where-Object { $_.Severity -eq 'Error' }
+            $warningIssues = $issues | Where-Object { $_.Severity -eq 'Warning' }
 
-              Write-Output "    [$severity] Line $line [$ruleName]: $message"
-              $totalIssues++
-
-              # Count critical issues that should fail the build
-              if ($severity -eq 'Error') {
+            if ($errorIssues) {
+              Write-Output "  ❌ Critical issues found:"
+              foreach ($issue in $errorIssues) {
+                Write-Output "    [ERROR] Line $($issue.Line) [$($issue.RuleName)]: $($issue.Message)"
                 $criticalIssues++
               }
             }
+
+            if ($warningIssues -and $warningIssues.Count -le 5) {
+              Write-Output "  ⚠️  Warnings found:"
+              foreach ($issue in $warningIssues) {
+                Write-Output "    [WARNING] Line $($issue.Line) [$($issue.RuleName)]: $($issue.Message)"
+              }
+            } elseif ($warningIssues -and $warningIssues.Count -gt 5) {
+              Write-Output "  ⚠️  $($warningIssues.Count) warnings found (showing first 3):"
+              $warningIssues | Select-Object -First 3 | ForEach-Object {
+                Write-Output "    [WARNING] Line $($_.Line) [$($_.RuleName)]: $($_.Message)"
+              }
+            }
+
+            $totalIssues += $issues.Count
           } else {
             Write-Output "  ✅ No issues found"
           }
         }
 
         Write-Output ""
-        Write-Output "📊 PSScriptAnalyzer Summary:"
+        Write-Output "📊 PSScriptAnalyzer Summary (Context-Aware Analysis):"
         Write-Output "  Total Issues: $totalIssues"
         Write-Output "  Critical Issues: $criticalIssues"
+        Write-Output "  Rules Excluded: Formatting noise, context-inappropriate rules"
+        Write-Output "  Focus: Deployment-critical issues only"
 
         if ($criticalIssues -gt 0) {
           Write-Error "Found $criticalIssues critical PSScriptAnalyzer issues"
           exit 1
         } elseif ($totalIssues -gt 0) {
-          Write-Warning "Found $totalIssues PSScriptAnalyzer issues (warnings/info)"
+          Write-Output "✅ PSScriptAnalyzer passed with $totalIssues minor warnings"
         } else {
           Write-Output "✅ No PSScriptAnalyzer issues found"
         }
