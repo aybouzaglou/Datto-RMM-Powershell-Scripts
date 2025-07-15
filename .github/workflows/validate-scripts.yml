@@ -2,17 +2,21 @@ name: 🔍 Validate PowerShell Scripts
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, 'feature/**', 'script/**', 'enhancement/**' ]
     paths:
       - 'components/**/*.ps1'
       - 'shared-functions/**/*.ps1'
       - 'launchers/**/*.ps1'
+      - '.github/workflows/**'
+      - 'scripts/**/*.ps1'
   pull_request:
     branches: [ main ]
     paths:
       - 'components/**/*.ps1'
       - 'shared-functions/**/*.ps1'
       - 'launchers/**/*.ps1'
+      - '.github/workflows/**'
+      - 'scripts/**/*.ps1'
   workflow_dispatch:
     inputs:
       test_level:
@@ -29,6 +33,10 @@ jobs:
   validate-powershell:
     name: 🔍 PowerShell Validation
     runs-on: windows-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     
     steps:
     - name: 📥 Checkout Repository
@@ -562,3 +570,74 @@ jobs:
         name: validated-scripts-${{ github.sha }}
         path: deployment-ready/
         retention-days: 30
+
+    - name: 🚀 Auto-Create Pull Request (Feature Branches Only)
+      if: github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/script/') || startsWith(github.ref, 'refs/heads/enhancement/'))
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: pwsh
+      run: |
+        Write-Output "=== Auto-Creating Pull Request ==="
+
+        $branchName = "${{ github.ref_name }}"
+        $prTitle = "🔍 PowerShell Script Changes: $branchName"
+
+        # Check if PR already exists
+        try {
+          $existingPRs = gh pr list --head $branchName --json number,title --limit 1
+          $existingPR = ($existingPRs | ConvertFrom-Json)
+
+          if ($existingPR -and $existingPR.Count -gt 0) {
+            $prNumber = $existingPR[0].number
+            Write-Output "✅ PR already exists: #$prNumber"
+            Write-Output "🔗 View PR: https://github.com/${{ github.repository }}/pull/$prNumber"
+            exit 0
+          }
+        } catch {
+          Write-Output "No existing PR found, creating new one..."
+        }
+
+        $prBody = @"
+        ## 🚀 PowerShell Script Changes
+
+        **Branch:** ``$branchName``
+        **Commit:** ``${{ github.sha }}``
+        **Validation:** ✅ **PASSED ALL CHECKS**
+
+        ### ✅ Validation Results
+        - ✅ **Syntax Validation**: PASSED
+        - ✅ **PSScriptAnalyzer**: PASSED (no critical errors)
+        - ✅ **Semantic Validation**: PASSED (Datto RMM compatible)
+        - ✅ **Performance Analysis**: PASSED (monitor compliance)
+        - ✅ **Architecture Validation**: PASSED (shared functions, launchers)
+
+        ### 📋 Changes Made
+        <!-- Auto-generated from validated changes -->
+
+        ### 🧪 Testing Status
+        - [x] Syntax validation passed
+        - [x] PSScriptAnalyzer validation passed
+        - [x] Datto RMM compatibility verified
+        - [x] Performance requirements met
+        - [x] Architecture validation passed
+
+        ### 🤖 Ready for Review
+        This PR has passed **enterprise-grade validation** and is ready for:
+        - Code review
+        - Final approval
+        - Deployment to Datto RMM
+
+        ---
+
+        **🎯 All validations passed - ready for merge and deployment!** 🎉
+        "@
+
+        try {
+          $result = gh pr create --title $prTitle --body $prBody --base main --head $branchName --label "powershell,datto-rmm,auto-created,validated"
+          Write-Output "✅ PR created successfully!"
+          Write-Output "🔗 $result"
+        } catch {
+          Write-Warning "Could not create PR automatically: $($_.Exception.Message)"
+          Write-Output "💡 You can create the PR manually - all validations have passed!"
+          Write-Output "🔗 Create PR: https://github.com/${{ github.repository }}/compare/main...$branchName"
+        }
