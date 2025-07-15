@@ -2,9 +2,10 @@
 
 > **LLM-Optimized Repository**: This README serves as a comprehensive launch pad for AI assistants and developers working with Datto RMM PowerShell automation.
 
-A production-ready collection of PowerShell scripts and function libraries designed for **Datto RMM (Remote Monitoring and Management)** featuring:
+A production-ready collection of PowerShell scripts and reference patterns designed for **Datto RMM (Remote Monitoring and Management)** featuring:
 - **🎯 Performance-optimized hybrid deployment** (98.2% faster monitors)
-- **🏗️ Enterprise-grade GitHub-based function library**
+- **🏗️ Enterprise-grade GitHub-based launcher architecture**
+- **📚 Reference function library** (copy/paste patterns, not dependencies)
 - **🔄 Automated validation pipeline** with GitHub Actions
 - **📚 Comprehensive documentation and templates**
 - **🧪 Performance testing and benchmarking suite**
@@ -32,14 +33,14 @@ This repository is structured for easy navigation and understanding:
 |----------|---------------------|-------------------|
 | 🔍 **Find existing scripts** | `components/` | [Component Categories](docs/Datto-RMM-Component-Categories.md) |
 | 🛠️ **Create new scripts** | `templates/` | [Templates & Examples](#-templates--examples) |
-| 📚 **Use shared functions** | `shared-functions/` | [Function Reference](docs/Function-Reference.md) |
+| 📚 **Copy function patterns** | `shared-functions/` | [Function Reference](docs/Function-Reference.md) |
 | 🚀 **Deploy scripts** | `launchers/` | [Deployment Guide](docs/Deployment-Guide.md) |
 | 🧪 **Test & validate** | `tests/` + GitHub Actions | [Testing & Validation](#-testing--validation) |
 | 📖 **Learn architecture** | `docs/` | [Architecture Overview](#-architecture-overview) |
 
-### **GitHub Function Library Architecture**
+### **GitHub Launcher Architecture**
 
-**Zero-maintenance script updates** - Scripts automatically download latest versions from GitHub:
+**Zero-maintenance script updates** - Applications/Scripts automatically download latest versions from GitHub:
 
 ```powershell
 # Universal launcher for any Datto RMM component category
@@ -52,8 +53,8 @@ exit $LASTEXITCODE
 ```
 
 **Enterprise Benefits:**
-- ✅ **Auto-updating scripts** - Zero maintenance, scripts update automatically
-- ✅ **Shared function library** - 50+ reusable functions for consistent operations
+- ✅ **Auto-updating scripts** - Zero maintenance, Applications/Scripts update automatically
+- ✅ **Reference function patterns** - 50+ proven code patterns for copy/paste development
 - ✅ **Version control** - Full Git history, rollback capabilities, branch support
 - ✅ **GitHub Actions validation** - Enterprise-grade automated testing pipeline
 - ✅ **Performance benchmarking** - Automated performance testing and reporting
@@ -64,8 +65,8 @@ exit $LASTEXITCODE
 ### **Core Components**
 | Component | Purpose | Location | Key Files | Documentation |
 |-----------|---------|----------|-----------|---------------|
-| 🔧 **Shared Functions** | 50+ reusable functions | `shared-functions/` | `SharedFunctions.ps1` (loader) | [Function Reference](docs/Function-Reference.md) |
-| 🚀 **Launchers** | Universal script execution | `launchers/` | `UniversalLauncher.ps1` | [Deployment Guide](docs/Deployment-Guide.md) |
+| 📚 **Reference Functions** | 50+ copy/paste patterns | `shared-functions/` | `EmbeddedMonitorFunctions.ps1` | [Function Reference](docs/Function-Reference.md) |
+| 🚀 **Launchers** | Auto-updating deployment | `launchers/` | `UniversalLauncher.ps1` | [Deployment Guide](docs/Deployment-Guide.md) |
 | 📦 **Components** | Production scripts | `components/` | Category-organized scripts | [Component Categories](docs/Datto-RMM-Component-Categories.md) |
 | 📋 **Templates** | Script templates | `templates/` | Ready-to-use templates | [Templates Section](#-templates--examples) |
 | 🧪 **Tests** | Validation & benchmarks | `tests/` | Performance testing suite | [Testing Section](#-testing--validation) |
@@ -115,13 +116,14 @@ shared-functions/
 ├── PerformanceMonitorFunctions.ps1 # Performance monitoring patterns
 ├── SecurityMonitorFunctions.ps1    # Security monitoring patterns
 ├── SystemMonitorFunctions.ps1      # System health monitoring patterns
-└── SharedFunctions.ps1        # **LAUNCHER USE ONLY** - Not for direct deployment
+└── SharedFunctions.ps1        # **DEPRECATED** - Legacy launcher function loader
 ```
 
 **🎯 Usage Philosophy:**
 - **For Monitors**: Copy functions from `EmbeddedMonitorFunctions.ps1` directly into your script
-- **For Applications/Scripts**: Use launchers (they can reference shared functions)
+- **For Applications/Scripts**: Use launchers for auto-updating (can reference patterns)
 - **For Development**: Use as reference patterns and proven code examples
+- **SharedFunctions.ps1**: Legacy file for launcher compatibility only
 
 ### 🚀 **Universal Launchers** (`launchers/`) - **APPLICATIONS & SCRIPTS ONLY**
 > **⚠️ IMPORTANT**: Launchers are ONLY for Applications and Scripts components. Monitors use direct deployment for maximum performance.
@@ -224,12 +226,12 @@ scripts/
 ## 🎯 Key Features & Capabilities
 
 ### �️ **Enterprise Architecture**
-- **🔄 Auto-updating scripts** - Zero maintenance, scripts update automatically from GitHub
-- **📚 50+ shared functions** - Comprehensive function library for consistent operations
+- **🔄 Auto-updating scripts** - Zero maintenance, Applications/Scripts update automatically from GitHub
+- **📚 50+ reference patterns** - Comprehensive copy/paste function patterns for development
 - **🏷️ Version control** - Full Git history, rollback capabilities, branch/tag support
 - **🧪 GitHub Actions validation** - Enterprise-grade automated testing pipeline
 - **� Performance benchmarking** - Automated performance testing and reporting
-- **🔧 Modular design** - Reusable components, easy customization and extension
+- **🔧 Modular design** - Self-contained components, easy customization and extension
 
 ### 📊 **Datto RMM Integration**
 - **🎯 Component categories** - Perfectly aligned with Applications, Monitors, Scripts
@@ -358,7 +360,7 @@ Every push triggers enterprise-grade validation:
 ### **🎯 For LLM Assistants & Developers**
 | Task | Primary Documentation | Secondary Resources |
 |------|----------------------|-------------------|
-| **🏗️ Understanding Architecture** | **[Architecture Philosophy](docs/Architecture-Philosophy.md)** | [GitHub Function Library Guide](docs/GitHub-Function-Library-Guide.md) |
+| **🏗️ Understanding Architecture** | **[Architecture Philosophy](docs/Architecture-Philosophy.md)** | [GitHub Launcher Guide](docs/GitHub-Function-Library-Guide.md) |
 | **Creating New Scripts** | [Templates](#-templates--examples) | [Function Reference](docs/Function-Reference.md) |
 | **Deployment Strategies** | [Deployment Guide](docs/Deployment-Guide.md) | [Component Categories](docs/Datto-RMM-Component-Categories.md) |
 | **Performance Optimization** | [Monitor Performance Guide](docs/Monitor-Performance-Optimization-Guide.md) | [Direct Deployment Guide](docs/Direct-Deployment-Guide.md) |
@@ -366,8 +368,8 @@ Every push triggers enterprise-grade validation:
 
 ### **📋 Complete Documentation List**
 - **[🏗️ Architecture Philosophy](docs/Architecture-Philosophy.md)** - **ESSENTIAL** - Core design principles and constraints
-- **[GitHub Function Library Guide](docs/GitHub-Function-Library-Guide.md)** - Complete architecture overview
-- **[Function Reference](docs/Function-Reference.md)** - Detailed function documentation (50+ functions)
+- **[GitHub Launcher Guide](docs/GitHub-Function-Library-Guide.md)** - Complete launcher architecture overview
+- **[Function Reference](docs/Function-Reference.md)** - Detailed function patterns (50+ copy/paste examples)
 - **[Deployment Guide](docs/Deployment-Guide.md)** - 15-minute setup walkthrough
 - **[Component Categories](docs/Datto-RMM-Component-Categories.md)** - Detailed category guide
 - **[Direct Deployment Guide](docs/Direct-Deployment-Guide.md)** - Direct deployment strategy
@@ -490,12 +492,12 @@ exit $LASTEXITCODE
 
 ## 🤝 Contributing
 
-### GitHub Function Library Architecture
-1. **Add new functions** to appropriate modules in `shared-functions/`
+### Reference Pattern Development
+1. **Add new patterns** to appropriate modules in `shared-functions/`
 2. **Create new scripts** in correct component category directories
-3. **Use shared functions** for consistent behavior and error handling
-4. **Test with launchers** to ensure proper integration
-5. **Update documentation** for new functions or scripts
+3. **Copy proven patterns** for consistent behavior and error handling
+4. **Test with launchers** for Applications/Scripts (not Monitors)
+5. **Update documentation** for new patterns or scripts
 
 ### Traditional Script Development
 1. Follow the appropriate script type guide
@@ -506,11 +508,11 @@ exit $LASTEXITCODE
 
 ## 📞 Support
 
-### GitHub Function Library Architecture
+### GitHub Launcher Architecture
 - **[Deployment Guide](docs/Deployment-Guide.md)** - 15-minute setup walkthrough
-- **[Function Reference](docs/Function-Reference.md)** - Complete function documentation
+- **[Function Reference](docs/Function-Reference.md)** - Complete pattern documentation
 - **[Component Categories](docs/Datto-RMM-Component-Categories.md)** - Category selection guide
-- **[GitHub Function Library Guide](docs/GitHub-Function-Library-Guide.md)** - Architecture overview
+- **[GitHub Launcher Guide](docs/GitHub-Function-Library-Guide.md)** - Architecture overview
 
 ### Traditional Script Development
 - **[Traditional Guides](traditional-guides/)** - Complete collection of development guides
@@ -542,7 +544,7 @@ This project is provided as-is for educational and operational use with Datto RM
 - **❌ Never suggest shared function imports for monitors** - Monitors must be self-contained
 - **❌ Never suggest launchers for monitors** - Direct deployment only for performance
 - **✅ Always use direct deployment for monitors** - 98.2% performance improvement
-- **✅ Copy functions from shared-functions/ into scripts** - Reference library, not dependencies
+- **✅ Copy patterns from shared-functions/ into scripts** - Reference library, not dependencies
 - **✅ Use launchers only for Applications/Scripts** - Never for monitors
 - **✅ Use templates as starting points** - Don't create scripts from scratch
 - **✅ Follow component category rules** - Monitors are immutable, Applications/Scripts are changeable
@@ -567,8 +569,8 @@ This project is provided as-is for educational and operational use with Datto RM
 - **See examples**: [Available Scripts](#-available-production-scripts) - Production-ready scripts
 
 ### **🔧 For Developers**
-- **Architecture overview**: [GitHub Function Library Guide](docs/GitHub-Function-Library-Guide.md)
-- **Function reference**: [Function Reference](docs/Function-Reference.md) - 50+ available functions
+- **Architecture overview**: [GitHub Launcher Guide](docs/GitHub-Function-Library-Guide.md)
+- **Function patterns**: [Function Reference](docs/Function-Reference.md) - 50+ copy/paste patterns
 - **Templates**: [Templates Section](#-templates--examples) - Starting points for new scripts
 
 ### **👨‍💻 For Technicians**
