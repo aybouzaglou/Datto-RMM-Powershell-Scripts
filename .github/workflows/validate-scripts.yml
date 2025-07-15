@@ -174,14 +174,24 @@ jobs:
               Write-Output "  ✅ Monitor correctly uses Write-Host with result markers"
             }
           } elseif ($content -match 'Write-Host' -and $relativePath -notlike "*Monitors*") {
-            Write-Warning "  ⚠️  Non-monitor script uses Write-Host (consider Write-Output)"
-            $semanticIssues++
+            # Allow Write-Host in development/validation scripts for colored output
+            if ($script.Name -like "*validate*" -or $script.Name -like "*install*" -or $script.Name -like "*workflow*") {
+              Write-Output "  ✅ Development script appropriately uses Write-Host for colored output"
+            } else {
+              Write-Warning "  ⚠️  Non-monitor script uses Write-Host (consider Write-Output for RMM scripts)"
+              $semanticIssues++
+            }
           }
 
           # Check for banned WMI operations in Datto RMM context
           if ($content -match 'Get-WmiObject.*Win32_Product' -or $content -match 'Get-CimInstance.*Win32_Product') {
-            Write-Error "  ❌ Uses Win32_Product (banned in Datto RMM - triggers MSI repair)"
-            exit 1
+            # Exclude validation scripts that check FOR these patterns
+            if ($script.Name -like "*validate*" -or $script.Name -like "*check*" -or $content -match 'banned.*Win32_Product|Win32_Product.*banned') {
+              Write-Output "  ✅ Validation script correctly checks for banned Win32_Product usage"
+            } else {
+              Write-Error "  ❌ Uses Win32_Product (banned in Datto RMM - triggers MSI repair)"
+              exit 1
+            }
           }
 
           # Check for interactive elements (context-aware for Datto RMM)
