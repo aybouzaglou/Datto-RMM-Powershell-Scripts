@@ -181,7 +181,7 @@ jobs:
           # Check for banned WMI operations in Datto RMM context
           # Look for actual usage, not string patterns in validation scripts
           if (($content -match 'Get-WmiObject\s+[^''"].*Win32_Product' -or $content -match 'Get-CimInstance\s+[^''"].*Win32_Product') -and $content -notmatch "content.*match.*Win32_Product") {
-            Write-Error "  ❌ Script '$($script.Name)' uses Win32_Product (banned in Datto RMM - triggers MSI repair)"
+            Write-Error "  ❌ Uses Win32_Product (banned in Datto RMM - triggers MSI repair)"
             exit 1
           }
 
@@ -190,9 +190,9 @@ jobs:
             # Check if this is a development/helper script (not for RMM deployment)
             if ($relativePath -like "*scripts*" -or $script.Name -like "*workflow*" -or $script.Name -like "*helper*" -or $script.Name -like "*install*" -or $script.Name -like "*validate*") {
               Write-Warning "  ⚠️  Development script '$($script.Name)' contains interactive elements (not for RMM deployment)"
-              # Don't increment semanticIssues for development scripts - this is expected
+              # Don't count development script interactive elements as semantic issues
             } else {
-              Write-Error "  ❌ Script '$($script.Name)' contains interactive elements (incompatible with Datto RMM deployment)"
+              Write-Error "  ❌ Contains interactive elements (incompatible with Datto RMM deployment)"
               exit 1
             }
           }
@@ -382,17 +382,17 @@ jobs:
 
           # Check for performance anti-patterns
           if ($content -match 'Get-ChildItem.*-Recurse.*C:\\') {
-            Write-Warning "  ⚠️  $scriptName: Full C: drive recursion detected"
+            Write-Warning "  ⚠️  $($scriptName): Full C drive recursion detected"
             $performanceIssues++
           }
 
           if ($content -match 'Get-Process.*\|.*Where-Object') {
-            Write-Warning "  ⚠️  $scriptName: Inefficient process filtering (use -Name parameter)"
+            Write-Warning "  ⚠️  $($scriptName): Inefficient process filtering (use -Name parameter)"
             $performanceIssues++
           }
 
           if ($content -match 'Get-Service.*\|.*Where-Object') {
-            Write-Warning "  ⚠️  $scriptName: Inefficient service filtering (use -Name parameter)"
+            Write-Warning "  ⚠️  $($scriptName): Inefficient service filtering (use -Name parameter)"
             $performanceIssues++
           }
         }
