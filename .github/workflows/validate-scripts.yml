@@ -163,8 +163,18 @@ jobs:
             $semanticIssues++
           }
 
+          # Check Write-Host usage (context-aware for Datto RMM)
           if ($content -match 'Write-Host' -and $relativePath -like "*Monitors*") {
-            Write-Warning "  ⚠️  Monitor uses Write-Host (may interfere with result parsing)"
+            # Write-Host is REQUIRED in Datto RMM monitors for result markers
+            if ($content -notmatch '<-Start Result->|<-End Result->') {
+              Write-Warning "  ⚠️  Monitor uses Write-Host but missing result markers"
+              $semanticIssues++
+            } else {
+              # Write-Host with result markers is correct for Datto RMM monitors
+              Write-Output "  ✅ Monitor correctly uses Write-Host with result markers"
+            }
+          } elseif ($content -match 'Write-Host' -and $relativePath -notlike "*Monitors*") {
+            Write-Warning "  ⚠️  Non-monitor script uses Write-Host (consider Write-Output)"
             $semanticIssues++
           }
 
@@ -174,10 +184,16 @@ jobs:
             exit 1
           }
 
-          # Check for interactive elements (banned in Datto RMM)
+          # Check for interactive elements (context-aware for Datto RMM)
           if ($content -match 'Read-Host|Get-Credential|\[System\.Windows\.Forms\]|\[System\.Windows\.MessageBox\]') {
-            Write-Error "  ❌ Contains interactive elements (incompatible with Datto RMM)"
-            exit 1
+            # Check if this is a development/helper script (not for RMM deployment)
+            if ($relativePath -like "*scripts*" -and ($script.Name -like "*workflow*" -or $script.Name -like "*helper*" -or $script.Name -like "*install*")) {
+              Write-Warning "  ⚠️  Development script contains interactive elements (not for RMM deployment)"
+              $semanticIssues++
+            } else {
+              Write-Error "  ❌ Contains interactive elements (incompatible with Datto RMM deployment)"
+              exit 1
+            }
           }
 
           # Check for proper error handling
@@ -193,10 +209,15 @@ jobs:
               exit 1
             }
 
-            # Check for proper monitor exit codes (0, 30, 31)
-            if ($content -match 'exit (?!0|30|31)\d+') {
-              Write-Warning "  ⚠️  Monitor uses non-standard exit codes (should be 0, 30, or 31)"
+            # Check for proper monitor exit codes (0, 30, 31, or variables)
+            $hardcodedExitCodes = [regex]::Matches($content, 'exit\s+(\d+)') | ForEach-Object { [int]$_.Groups[1].Value }
+            $invalidExitCodes = $hardcodedExitCodes | Where-Object { $_ -notin @(0, 30, 31) }
+
+            if ($invalidExitCodes.Count -gt 0) {
+              Write-Warning "  ⚠️  Monitor uses non-standard exit codes: $($invalidExitCodes -join ', ') (should be 0, 30, or 31)"
               $semanticIssues++
+            } elseif ($hardcodedExitCodes.Count -gt 0) {
+              Write-Output "  ✅ Monitor uses correct exit codes: $($hardcodedExitCodes -join ', ')"
             }
           }
 
