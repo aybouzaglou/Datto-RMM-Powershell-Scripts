@@ -53,12 +53,47 @@ jobs:
       run: |
         Write-Output "=== PowerShell Syntax Validation ==="
         $errors = 0
-        $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
-          $_.FullName -notlike "*\.git\*" -and
-          $_.FullName -notlike "*\legacy\*" -and
-          $_.FullName -notlike "*archive*" -and
-          $_.FullName -notlike "*api-experiments*"
+
+        # Determine which scripts to test based on trigger
+        if ("${{ github.event_name }}" -eq "workflow_dispatch" -or "${{ github.ref_name }}" -eq "main") {
+          Write-Output "🔍 Full validation triggered (main branch or manual dispatch)"
+          $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
+            $_.FullName -notlike "*\.git\*" -and
+            $_.FullName -notlike "*\legacy\*" -and
+            $_.FullName -notlike "*archive*" -and
+            $_.FullName -notlike "*api-experiments*"
+          }
+        } else {
+          Write-Output "⚡ Optimized validation - testing only changed files"
+
+          # Get changed PowerShell files
+          $changedFiles = git diff --name-only HEAD~1 HEAD | Where-Object { $_ -like "*.ps1" }
+
+          if ($changedFiles) {
+            Write-Output "Changed PowerShell files detected:"
+            $changedFiles | ForEach-Object { Write-Output "  - $_" }
+
+            $scripts = $changedFiles | ForEach-Object {
+              if (Test-Path $_) { Get-Item $_ }
+            } | Where-Object {
+              $_.FullName -notlike "*\.git\*" -and
+              $_.FullName -notlike "*\legacy\*" -and
+              $_.FullName -notlike "*archive*" -and
+              $_.FullName -notlike "*api-experiments*"
+            }
+          } else {
+            Write-Output "No PowerShell files changed - skipping validation"
+            $scripts = @()
+          }
         }
+
+        if ($scripts.Count -eq 0) {
+          Write-Output "✅ No scripts to validate"
+          exit 0
+        }
+
+        Write-Output "Validating $($scripts.Count) PowerShell scripts..."
+        Write-Output ""
 
         foreach ($script in $scripts) {
           Write-Output "Checking: $($script.Name)"
@@ -75,7 +110,7 @@ jobs:
           Write-Error "Found $errors syntax errors"
           exit 1
         }
-        Write-Output "✅ All scripts have valid syntax"
+        Write-Output "✅ All tested scripts have valid syntax"
 
     - name: 🔍 Advanced PowerShell Analysis
       shell: pwsh
@@ -87,11 +122,33 @@ jobs:
         Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -Repository PSGallery
         Import-Module PSScriptAnalyzer
 
-        $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
-          $_.FullName -notlike "*\.git\*" -and
-          $_.FullName -notlike "*\legacy\*" -and
-          $_.FullName -notlike "*archive*" -and
-          $_.FullName -notlike "*api-experiments*"
+        # Use same script detection logic as syntax validation
+        if ("${{ github.event_name }}" -eq "workflow_dispatch" -or "${{ github.ref_name }}" -eq "main") {
+          $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
+            $_.FullName -notlike "*\.git\*" -and
+            $_.FullName -notlike "*\legacy\*" -and
+            $_.FullName -notlike "*archive*" -and
+            $_.FullName -notlike "*api-experiments*"
+          }
+        } else {
+          $changedFiles = git diff --name-only HEAD~1 HEAD | Where-Object { $_ -like "*.ps1" }
+          if ($changedFiles) {
+            $scripts = $changedFiles | ForEach-Object {
+              if (Test-Path $_) { Get-Item $_ }
+            } | Where-Object {
+              $_.FullName -notlike "*\.git\*" -and
+              $_.FullName -notlike "*\legacy\*" -and
+              $_.FullName -notlike "*archive*" -and
+              $_.FullName -notlike "*api-experiments*"
+            }
+          } else {
+            $scripts = @()
+          }
+        }
+
+        if ($scripts.Count -eq 0) {
+          Write-Output "✅ No scripts to analyze"
+          exit 0
         }
 
         $totalIssues = 0
@@ -143,11 +200,33 @@ jobs:
       run: |
         Write-Output "=== Semantic Validation ==="
 
-        $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
-          $_.FullName -notlike "*\.git\*" -and
-          $_.FullName -notlike "*\legacy\*" -and
-          $_.FullName -notlike "*archive*" -and
-          $_.FullName -notlike "*api-experiments*"
+        # Use same script detection logic as previous steps
+        if ("${{ github.event_name }}" -eq "workflow_dispatch" -or "${{ github.ref_name }}" -eq "main") {
+          $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
+            $_.FullName -notlike "*\.git\*" -and
+            $_.FullName -notlike "*\legacy\*" -and
+            $_.FullName -notlike "*archive*" -and
+            $_.FullName -notlike "*api-experiments*"
+          }
+        } else {
+          $changedFiles = git diff --name-only HEAD~1 HEAD | Where-Object { $_ -like "*.ps1" }
+          if ($changedFiles) {
+            $scripts = $changedFiles | ForEach-Object {
+              if (Test-Path $_) { Get-Item $_ }
+            } | Where-Object {
+              $_.FullName -notlike "*\.git\*" -and
+              $_.FullName -notlike "*\legacy\*" -and
+              $_.FullName -notlike "*archive*" -and
+              $_.FullName -notlike "*api-experiments*"
+            }
+          } else {
+            $scripts = @()
+          }
+        }
+
+        if ($scripts.Count -eq 0) {
+          Write-Output "✅ No scripts to validate semantically"
+          exit 0
         }
 
         $semanticIssues = 0
@@ -505,31 +584,53 @@ jobs:
         Write-Output ""
         Write-Output "=== Performance Anti-Pattern Check ==="
 
-        $allScripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
-          $_.FullName -notlike "*\.git\*" -and
-          $_.FullName -notlike "*\legacy\*" -and
-          $_.FullName -notlike "*archive*" -and
-          $_.FullName -notlike "*api-experiments*"
+        # Use same script detection logic for performance anti-pattern check
+        if ("${{ github.event_name }}" -eq "workflow_dispatch" -or "${{ github.ref_name }}" -eq "main") {
+          $allScripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
+            $_.FullName -notlike "*\.git\*" -and
+            $_.FullName -notlike "*\legacy\*" -and
+            $_.FullName -notlike "*archive*" -and
+            $_.FullName -notlike "*api-experiments*"
+          }
+        } else {
+          $changedFiles = git diff --name-only HEAD~1 HEAD | Where-Object { $_ -like "*.ps1" }
+          if ($changedFiles) {
+            $allScripts = $changedFiles | ForEach-Object {
+              if (Test-Path $_) { Get-Item $_ }
+            } | Where-Object {
+              $_.FullName -notlike "*\.git\*" -and
+              $_.FullName -notlike "*\legacy\*" -and
+              $_.FullName -notlike "*archive*" -and
+              $_.FullName -notlike "*api-experiments*"
+            }
+          } else {
+            $allScripts = @()
+          }
         }
 
-        foreach ($script in $allScripts) {
-          $content = Get-Content $script.FullName -Raw
-          $scriptName = $script.Name
+        if ($allScripts.Count -eq 0) {
+          Write-Output "✅ No scripts to check for performance anti-patterns"
+        } else {
 
-          # Check for performance anti-patterns
-          if ($content -match 'Get-ChildItem.*-Recurse.*C:\\') {
-            Write-Warning "  ⚠️  $($scriptName): Full C drive recursion detected"
-            $performanceIssues++
-          }
+          foreach ($script in $allScripts) {
+            $content = Get-Content $script.FullName -Raw
+            $scriptName = $script.Name
 
-          if ($content -match 'Get-Process.*\|.*Where-Object') {
-            Write-Warning "  ⚠️  $($scriptName): Inefficient process filtering (use -Name parameter)"
-            $performanceIssues++
-          }
+            # Check for performance anti-patterns
+            if ($content -match 'Get-ChildItem.*-Recurse.*C:\\') {
+              Write-Warning "  ⚠️  $($scriptName): Full C drive recursion detected"
+              $performanceIssues++
+            }
 
-          if ($content -match 'Get-Service.*\|.*Where-Object') {
-            Write-Warning "  ⚠️  $($scriptName): Inefficient service filtering (use -Name parameter)"
-            $performanceIssues++
+            if ($content -match 'Get-Process.*\|.*Where-Object') {
+              Write-Warning "  ⚠️  $($scriptName): Inefficient process filtering (use -Name parameter)"
+              $performanceIssues++
+            }
+
+            if ($content -match 'Get-Service.*\|.*Where-Object') {
+              Write-Warning "  ⚠️  $($scriptName): Inefficient service filtering (use -Name parameter)"
+              $performanceIssues++
+            }
           }
         }
 
@@ -576,12 +677,20 @@ jobs:
       run: |
         Write-Output "=== Comprehensive Validation Summary ==="
 
-        $totalScripts = (Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
-          $_.FullName -notlike "*\.git\*" -and
-          $_.FullName -notlike "*\legacy\*" -and
-          $_.FullName -notlike "*archive*" -and
-          $_.FullName -notlike "*api-experiments*"
-        }).Count
+        # Calculate script counts based on validation mode
+        if ("${{ github.event_name }}" -eq "workflow_dispatch" -or "${{ github.ref_name }}" -eq "main") {
+          $validationMode = "Full Repository Validation"
+          $totalScripts = (Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
+            $_.FullName -notlike "*\.git\*" -and
+            $_.FullName -notlike "*\legacy\*" -and
+            $_.FullName -notlike "*archive*" -and
+            $_.FullName -notlike "*api-experiments*"
+          }).Count
+        } else {
+          $validationMode = "Optimized Validation (Changed Files Only)"
+          $changedFiles = git diff --name-only HEAD~1 HEAD | Where-Object { $_ -like "*.ps1" }
+          $totalScripts = ($changedFiles | Where-Object { Test-Path $_ }).Count
+        }
 
         $componentScripts = (Get-ChildItem -Path "components" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue).Count
         $sharedFunctions = (Get-ChildItem -Path "shared-functions" -Filter "*.ps1" -ErrorAction SilentlyContinue).Count
@@ -593,8 +702,10 @@ jobs:
         Write-Output ""
         Write-Output "🎯 === VALIDATION RESULTS SUMMARY === 🎯"
         Write-Output ""
+        Write-Output "🔍 Validation Mode: $validationMode"
+        Write-Output ""
         Write-Output "📊 Script Inventory:"
-        Write-Output "  📁 Total Scripts: $totalScripts"
+        Write-Output "  📁 Scripts Validated: $totalScripts"
         Write-Output "  🧩 Component Scripts: $componentScripts"
         Write-Output "    📊 Monitors: $monitors"
         Write-Output "    📱 Applications: $applications"
@@ -619,6 +730,7 @@ jobs:
         Write-Output "  🧠 Semantic validation for Datto RMM compatibility"
         Write-Output "  ⚡ Performance analysis for monitor compliance"
         Write-Output "  🏗️  Architecture validation for your GitHub-based system"
+        Write-Output "  ⚡ Smart optimization - tests only changed files (feature branches)"
         Write-Output ""
         Write-Output "This validation pipeline now RIVALS VSCode's PowerShell extension!"
         Write-Output ""
