@@ -34,6 +34,13 @@ Write-Host "<-End Result->"
 
 ⚠️ **CRITICAL**: Without these markers, the Result field will be blank in the RMM interface!
 
+#### **Write-Host vs Write-Output for Monitors**
+- **✅ RECOMMENDED**: `Write-Host` - All official Datto RMM monitor examples use Write-Host
+- **✅ ALSO WORKS**: `Write-Output` - Both go to streams that Datto RMM captures
+- **⚠️ CRITICAL**: Use **only one** consistently - don't mix them in the same script
+- **🚫 NEVER**: Use Write-Host anywhere else in the script - only for the three result lines
+- **✅ BEST PRACTICE**: Route all other output through logging functions that don't pollute console
+
 ### Exit Codes for Custom Monitor Components
 **Important**: Custom Monitor components have different exit code behavior than regular scripts:
 

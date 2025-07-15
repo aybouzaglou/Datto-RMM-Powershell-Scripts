@@ -125,9 +125,9 @@ After successful testing:
 - **Changeable**: No (immutable once created)
 - **Requirements**: Must include result markers:
   ```powershell
-  Write-Output "<-Start Result->"
-  Write-Output "OK: System is healthy"
-  Write-Output "<-End Result->"
+  Write-Host "<-Start Result->"
+  Write-Host "OK: System is healthy"
+  Write-Host "<-End Result->"
   exit 0  # 0=OK, 30=WARNING, 31=CRITICAL
   ```
 

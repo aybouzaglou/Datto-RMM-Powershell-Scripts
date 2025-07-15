@@ -165,16 +165,16 @@ try {
     }
     
     # Required result markers for Custom Monitor
-    Write-Output "<-Start Result->"
-    Write-Output "`$status`: `$message"
-    Write-Output "<-End Result->"
+    Write-Host "<-Start Result->"
+    Write-Host "`$status`: `$message"
+    Write-Host "<-End Result->"
     
     exit `$exitCode
     
 } catch {
-    Write-Output "<-Start Result->"
-    Write-Output "CRITICAL: Monitor script error - `$(`$_.Exception.Message)"
-    Write-Output "<-End Result->"
+    Write-Host "<-Start Result->"
+    Write-Host "CRITICAL: Monitor script error - `$(`$_.Exception.Message)"
+    Write-Host "<-End Result->"
     exit 31
 }
 "@
