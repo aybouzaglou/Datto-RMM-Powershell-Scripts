@@ -1,0 +1,140 @@
+name: 🤖 Auto-PR Creation After Validation
+
+on:
+  push:
+    branches: 
+      - 'feature/**'
+      - 'script/**'
+      - 'enhancement/**'
+    paths:
+      - 'components/**/*.ps1'
+      - 'shared-functions/**/*.ps1'
+      - 'launchers/**/*.ps1'
+
+jobs:
+  validate-and-create-pr:
+    name: 🔍 Validate & Create PR
+    runs-on: windows-latest
+    if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop'
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: 🔧 Setup PowerShell
+      shell: pwsh
+      run: |
+        Write-Output "PowerShell Version: $($PSVersionTable.PSVersion)"
+        Write-Output "Branch: ${{ github.ref_name }}"
+        
+    # Run the same comprehensive validation as your main workflow
+    - name: 📋 Quick Validation Check
+      shell: pwsh
+      run: |
+        Write-Output "=== Quick Validation Check ==="
+        $errors = 0
+        $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object { 
+          $_.FullName -notlike "*\.git\*" -and 
+          $_.FullName -notlike "*\legacy\*" 
+        }
+        
+        foreach ($script in $scripts) {
+          Write-Output "Checking: $($script.Name)"
+          try {
+            $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script.FullName -Raw), [ref]$null)
+            Write-Output "  ✅ Syntax OK"
+          } catch {
+            Write-Output "  ❌ Syntax Error: $($_.Exception.Message)"
+            $errors++
+          }
+        }
+        
+        if ($errors -gt 0) {
+          Write-Error "❌ Found $errors syntax errors. Fix these before creating PR."
+          exit 1
+        }
+        Write-Output "✅ Basic validation passed - ready for PR creation"
+        
+    - name: 🔍 PSScriptAnalyzer Quick Check
+      shell: pwsh
+      run: |
+        Write-Output "=== PSScriptAnalyzer Quick Check ==="
+        Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -Repository PSGallery
+        
+        $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object { 
+          $_.FullName -notlike "*\.git\*" -and 
+          $_.FullName -notlike "*\legacy\*" 
+        }
+        
+        $criticalIssues = 0
+        foreach ($script in $scripts) {
+          $issues = Invoke-ScriptAnalyzer -Path $script.FullName -Severity 'Error'
+          $criticalIssues += $issues.Count
+        }
+        
+        if ($criticalIssues -gt 0) {
+          Write-Error "❌ Found $criticalIssues critical PSScriptAnalyzer errors. Fix these first."
+          exit 1
+        }
+        Write-Output "✅ No critical PSScriptAnalyzer issues found"
+        
+    - name: 🚀 Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref_name }}
+        base: main
+        title: "🔍 PowerShell Script Changes: ${{ github.ref_name }}"
+        body: |
+          ## 🚀 PowerShell Script Changes
+          
+          **Branch:** `${{ github.ref_name }}`
+          **Commit:** `${{ github.sha }}`
+          
+          ### ✅ Pre-Validation Status
+          - ✅ **Syntax Check**: PASSED
+          - ✅ **Critical PSScriptAnalyzer**: PASSED
+          - 🔄 **Full Validation**: Will run on PR
+          
+          ### 📋 Changes Made
+          <!-- Describe your changes here -->
+          
+          ### 🧪 Testing Checklist
+          - [ ] Tested script syntax locally
+          - [ ] Verified Datto RMM compatibility
+          - [ ] Checked for performance issues
+          - [ ] Updated documentation if needed
+          
+          ### 🤖 Gemini Code Assist Review
+          @gemini-code-assist Please review this PowerShell script for:
+          - Datto RMM best practices
+          - Security considerations
+          - Performance optimizations
+          - Code quality improvements
+          - Ensure it does not break any dependencies or shared functions or launcher scripts
+          
+          ---
+          
+          **🔍 Full validation will run automatically on this PR**
+          
+          Once approved and merged, scripts will be ready for Datto RMM deployment! 🎉
+        labels: |
+          powershell
+          datto-rmm
+          auto-created
+        draft: false
+        
+    - name: 📊 PR Creation Summary
+      shell: pwsh
+      run: |
+        Write-Output "🎉 === PR CREATION SUCCESSFUL === 🎉"
+        Write-Output ""
+        Write-Output "✅ Your changes have been validated and a PR has been created!"
+        Write-Output "✅ Gemini Code Assist will now review your changes"
+        Write-Output "✅ Full validation will run on the PR"
+        Write-Output ""
+        Write-Output "🔗 Check your GitHub repository for the new PR"
+        Write-Output "🤖 Gemini will provide code review feedback"
+        Write-Output "🚀 Once approved, merge to deploy!"
