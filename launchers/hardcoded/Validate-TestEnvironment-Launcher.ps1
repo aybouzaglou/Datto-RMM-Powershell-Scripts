@@ -1,14 +1,13 @@
 <#
 .SYNOPSIS
-Hard-Coded Datto RMM Script Launcher Template
+Hard-Coded Launcher for Validate Test Environment Script
 
 .DESCRIPTION
-Template for creating hard-coded launchers that download and execute specific scripts from GitHub with:
-- Hard-coded script path (no environment variable consumption)
+Hard-coded launcher that downloads and executes Validate-TestEnvironment.ps1 from GitHub with:
+- Hard-coded script path (no environment variable consumption for script selection)
 - All environment variables passed through to the underlying script
 - Comprehensive error handling and logging
 - Offline fallback capabilities
-- Version pinning support
 
 .PARAMETER GitHubRepo
 GitHub repository in format "owner/repo"
@@ -23,14 +22,14 @@ Force re-download even if cached
 Use only cached files
 
 .EXAMPLE
-# This template should be customized with hard-coded script paths
-# All environment variables will be passed to the underlying script
+# Deploy as Datto RMM Scripts component
+# Environment variables like TestResultsPath will be passed to Validate-TestEnvironment.ps1
 
 .NOTES
 Version: 4.0.0
 Author: Datto RMM Function Library
 Compatible: PowerShell 2.0+, Datto RMM Environment
-Template: Hard-coded launcher (customize SCRIPT_PATH and SCRIPT_TYPE)
+Script: Validate-TestEnvironment.ps1 (Test Environment Validation)
 #>
 
 param(
@@ -40,11 +39,11 @@ param(
     [switch]$OfflineMode
 )
 
-# ===== CUSTOMIZE THESE VALUES FOR EACH SCRIPT =====
-$SCRIPT_PATH = "components/Scripts/SCRIPT_NAME_HERE.ps1"  # Replace with actual script path
-$SCRIPT_TYPE = "Scripts"  # Replace with: Applications, Scripts (Monitors use direct deployment)
-$SCRIPT_DISPLAY_NAME = "SCRIPT_DISPLAY_NAME_HERE"  # Replace with friendly name
-# ===================================================
+# ===== HARD-CODED SCRIPT CONFIGURATION =====
+$SCRIPT_PATH = "components/Scripts/Validate-TestEnvironment.ps1"
+$SCRIPT_TYPE = "Scripts"
+$SCRIPT_DISPLAY_NAME = "Validate Test Environment"
+# ============================================
 
 # Configuration
 $BaseURL = "https://raw.githubusercontent.com/$GitHubRepo/$Branch"
@@ -60,7 +59,7 @@ $LogDir = "C:\ProgramData\DattoRMM"
 
 # Start transcript with unique name
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$transcriptPath = "$LogDir\UniversalLauncher-$timestamp.log"
+$transcriptPath = "$LogDir\Validate-TestEnvironment-Launcher-$timestamp.log"
 Start-Transcript -Path $transcriptPath -Force
 
 try {
@@ -73,23 +72,10 @@ try {
     Write-Output "Working Directory: $WorkingDir"
     Write-Output "Log Directory: $LogDir"
     Write-Output ""
-
+    
     # Extract script name from path for display and file operations
     $ScriptName = Split-Path $SCRIPT_PATH -Leaf
-
-    # Pre-flight validation
-    if ([string]::IsNullOrWhiteSpace($SCRIPT_PATH)) {
-        Write-Error "FATAL: SCRIPT_PATH is not configured in this launcher template"
-        Write-Output "This launcher template needs to be customized with the correct script path"
-        exit 12
-    }
-
-    if ([string]::IsNullOrWhiteSpace($SCRIPT_TYPE)) {
-        Write-Error "FATAL: SCRIPT_TYPE is not configured in this launcher template"
-        Write-Output "Valid values: Applications, Scripts (Monitors use direct deployment)"
-        exit 13
-    }
-
+    
     Write-Output "Hard-Coded Script Configuration:"
     Write-Output "- Display Name: $SCRIPT_DISPLAY_NAME"
     Write-Output "- Script Name: $ScriptName"
@@ -99,8 +85,8 @@ try {
     Write-Output "- Offline Mode: $OfflineMode"
     Write-Output ""
     
-    # Display Datto RMM environment variables
-    Write-Output "Datto RMM Environment Variables:"
+    # Display Datto RMM environment variables (all will be passed to script)
+    Write-Output "Environment Variables (passed to script):"
     $rmmVars = Get-ChildItem env: | Where-Object { 
         $_.Name -notlike "TEMP*" -and 
         $_.Name -notlike "TMP*" -and 
@@ -145,7 +131,7 @@ try {
         }
     }
     
-    # Step 1: ⚠️ DEPRECATED - Shared functions are now embedded in scripts
+    # Step 1: Note about embedded functions
     Write-Output "=== Note: Scripts now use embedded functions (no shared function loading) ==="
     Write-Output "✓ Modern scripts are self-contained for maximum reliability"
     
@@ -218,25 +204,7 @@ try {
         Write-Output "Script execution completed"
         Write-Output "Exit code: $exitCode"
         Write-Output "Completion time: $(Get-Date)"
-        
-        # Interpret exit codes based on script type
-        if ($ScriptType -eq "monitors") {
-            # Monitor scripts: 0 = OK, any non-zero = Alert
-            if ($exitCode -eq 0 -or $null -eq $exitCode) {
-                Write-Output "Monitor status: OK"
-            } else {
-                Write-Output "Monitor status: ALERT (Exit code: $exitCode)"
-            }
-        } else {
-            # Installation/Maintenance scripts: 0 = Success, 3010/1641 = Reboot required, other = Failed
-            switch ($exitCode) {
-                0 { Write-Output "Status: SUCCESS" }
-                3010 { Write-Output "Status: SUCCESS (Reboot required)" }
-                1641 { Write-Output "Status: SUCCESS (Reboot initiated)" }
-                $null { Write-Output "Status: SUCCESS (No exit code)" }
-                default { Write-Output "Status: FAILED (Exit code: $exitCode)" }
-            }
-        }
+        Write-Output "=============================================="
         
         exit $exitCode
     } finally {
@@ -246,22 +214,7 @@ try {
 } catch {
     Write-Error "Launcher failed: $($_.Exception.Message)"
     Write-Error "Line: $($_.InvocationInfo.ScriptLineNumber)"
-    Write-Error "Position: $($_.InvocationInfo.PositionMessage)"
-    
-    # Provide troubleshooting information
-    Write-Output ""
-    Write-Output "Troubleshooting Information:"
-    Write-Output "- Check internet connectivity (if not using offline mode)"
-    Write-Output "- Verify GitHub repository is accessible: https://github.com/$GitHubRepo"
-    Write-Output "- Ensure script exists in repository: components/$ScriptType/$ScriptName"
-    Write-Output "- Check PowerShell execution policy"
-    Write-Output "- Verify antivirus is not blocking downloads"
-    Write-Output "- Review transcript log: $transcriptPath"
-    
-    exit 1
+    exit 2
 } finally {
-    Write-Output ""
-    Write-Output "Launcher execution completed at: $(Get-Date)"
-    Write-Output "Transcript log saved to: $transcriptPath"
     Stop-Transcript
 }

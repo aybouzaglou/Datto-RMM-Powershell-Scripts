@@ -265,9 +265,17 @@ scripts/
    - 📊 **Monitors**: System health monitoring (<3 seconds, immutable category) - **Use direct deployment**
    - 📝 **Scripts**: General automation/maintenance (flexible timeout) - **Use launchers**
 
-2. **For Applications & Scripts** - Use launcher approach:
+2. **For Applications & Scripts** - Use hard-coded launcher approach (recommended):
    ```powershell
-   # Universal launcher for Applications & Scripts only
+   # Hard-coded launcher - copy content from launchers/hardcoded/YourScript-Launcher.ps1
+   # All environment variables available for script configuration
+   # No environment variable conflicts with launcher
+   ```
+   **Benefits**: All environment variables passed to script (customwhitelist, RebootEnabled, etc.)
+
+   **Legacy Universal Launcher** (⚠️ deprecated - causes environment variable conflicts):
+   ```powershell
+   # ⚠️ DEPRECATED: Consumes ScriptName/ScriptType, blocking script environment variables
    $LauncherURL = "https://raw.githubusercontent.com/aybouzaglou/Datto-RMM-Powershell-Scripts/main/launchers/UniversalLauncher.ps1"
    $LauncherPath = "$env:TEMP\UniversalLauncher.ps1"
    [Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject([Net.SecurityProtocolType], 3072)
@@ -275,7 +283,6 @@ scripts/
    & $LauncherPath -ScriptName $env:ScriptName -ScriptType $env:ScriptType
    exit $LASTEXITCODE
    ```
-   **Environment Variables**: `ScriptName` (e.g., "FocusedDebloat.ps1"), `ScriptType` ("Applications" or "Scripts")
 
 3. **For Monitors** - Use direct deployment:
    - Copy the entire monitor script content from `components/monitors/YourMonitor.ps1`
@@ -283,7 +290,27 @@ scripts/
    - Set environment variables directly (e.g., `WarningThreshold=15`, `CriticalThreshold=5`)
    - **98.2% faster performance** with sub-200ms execution times!
 
-### 📊 **Available Production Scripts**
+### � **Available Hard-Coded Launchers**
+
+#### **Applications Launchers** (`launchers/hardcoded/`)
+- **`ScanSnapHome-Launcher.ps1`** - ScanSnap Home installation launcher
+  - Script: `components/Applications/ScanSnapHome.ps1`
+  - Environment Variables: All passed to script
+
+#### **Scripts Launchers** (`launchers/hardcoded/`)
+- **`FocusedDebloat-Launcher.ps1`** - Windows debloat launcher
+  - Script: `components/Scripts/FocusedDebloat.ps1`
+  - Environment Variables: `customwhitelist`, `skipwindows`, `skiphp`, `skipdell`, `skiplenovo`
+
+- **`Setup-TestDevice-Launcher.ps1`** - Test device setup launcher
+  - Script: `components/Scripts/Setup-TestDevice.ps1`
+  - Environment Variables: `TestResultsPath`, `CleanupOldResults`
+
+- **`Validate-TestEnvironment-Launcher.ps1`** - Test environment validation launcher
+  - Script: `components/Scripts/Validate-TestEnvironment.ps1`
+  - Environment Variables: `TestResultsPath`
+
+### �📊 **Available Production Scripts**
 
 #### **Applications** (`components/Applications/`)
 - **`ScanSnapHome.ps1`** - ScanSnap Home installation with automatic detection
