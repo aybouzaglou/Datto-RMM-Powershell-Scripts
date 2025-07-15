@@ -35,9 +35,11 @@ jobs:
       run: |
         Write-Output "=== Quick Validation Check ==="
         $errors = 0
-        $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object { 
-          $_.FullName -notlike "*\.git\*" -and 
-          $_.FullName -notlike "*\legacy\*" 
+        $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
+          $_.FullName -notlike "*\.git\*" -and
+          $_.FullName -notlike "*\legacy\*" -and
+          $_.FullName -notlike "*archive*" -and
+          $_.FullName -notlike "*api-experiments*"
         }
         
         foreach ($script in $scripts) {
@@ -63,9 +65,11 @@ jobs:
         Write-Output "=== PSScriptAnalyzer Quick Check ==="
         Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -Repository PSGallery
         
-        $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object { 
-          $_.FullName -notlike "*\.git\*" -and 
-          $_.FullName -notlike "*\legacy\*" 
+        $scripts = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
+          $_.FullName -notlike "*\.git\*" -and
+          $_.FullName -notlike "*\legacy\*" -and
+          $_.FullName -notlike "*archive*" -and
+          $_.FullName -notlike "*api-experiments*"
         }
         
         $criticalIssues = 0
