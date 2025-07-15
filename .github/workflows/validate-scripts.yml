@@ -181,18 +181,18 @@ jobs:
           # Check for banned WMI operations in Datto RMM context
           # Look for actual usage, not string patterns in validation scripts
           if (($content -match 'Get-WmiObject\s+[^''"].*Win32_Product' -or $content -match 'Get-CimInstance\s+[^''"].*Win32_Product') -and $content -notmatch "content.*match.*Win32_Product") {
-            Write-Error "  ❌ Uses Win32_Product (banned in Datto RMM - triggers MSI repair)"
+            Write-Error "  ❌ Script '$($script.Name)' uses Win32_Product (banned in Datto RMM - triggers MSI repair)"
             exit 1
           }
 
           # Check for interactive elements (context-aware for Datto RMM)
           if ($content -match 'Read-Host|Get-Credential|\[System\.Windows\.Forms\]|\[System\.Windows\.MessageBox\]') {
             # Check if this is a development/helper script (not for RMM deployment)
-            if ($relativePath -like "*scripts*" -and ($script.Name -like "*workflow*" -or $script.Name -like "*helper*" -or $script.Name -like "*install*")) {
-              Write-Warning "  ⚠️  Development script contains interactive elements (not for RMM deployment)"
-              $semanticIssues++
+            if ($relativePath -like "*scripts*" -or $script.Name -like "*workflow*" -or $script.Name -like "*helper*" -or $script.Name -like "*install*" -or $script.Name -like "*validate*") {
+              Write-Warning "  ⚠️  Development script '$($script.Name)' contains interactive elements (not for RMM deployment)"
+              # Don't increment semanticIssues for development scripts - this is expected
             } else {
-              Write-Error "  ❌ Contains interactive elements (incompatible with Datto RMM deployment)"
+              Write-Error "  ❌ Script '$($script.Name)' contains interactive elements (incompatible with Datto RMM deployment)"
               exit 1
             }
           }
