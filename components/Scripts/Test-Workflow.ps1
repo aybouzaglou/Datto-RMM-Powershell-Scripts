@@ -15,6 +15,7 @@
 try {
     Write-Output "🚀 Starting Test-Workflow..."
     Write-Output "This demonstrates the bulletproof development workflow"
+    Write-Output "Testing with fixed validation pipeline - no more critical errors!"
 
     # Simulate some work
     Start-Sleep -Seconds 1

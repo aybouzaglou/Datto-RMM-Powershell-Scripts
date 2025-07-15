@@ -2,7 +2,7 @@ name: 🤖 Auto-PR Creation After Validation
 
 on:
   push:
-    branches: 
+    branches:
       - 'feature/**'
       - 'script/**'
       - 'enhancement/**'
@@ -10,6 +10,8 @@ on:
       - 'components/**/*.ps1'
       - 'shared-functions/**/*.ps1'
       - 'launchers/**/*.ps1'
+      - '.github/workflows/**'
+      - 'scripts/**/*.ps1'
 
 jobs:
   validate-and-create-pr:
