@@ -251,23 +251,23 @@ scripts/
 - **📊 Direct Deployment Monitors** - Sub-200ms execution (98.2% faster than launcher-based)
 - **🔍 Registry-First Detection** - Fast software detection (avoids slow Win32_Product WMI)
 - **⏰ Timeout Protection** - Prevents hanging processes with configurable timeouts
-- **💾 Resource Efficiency** - Minimal system impact with intelligent caching
-- **🚀 Function Caching** - Local caching reduces download overhead
+- **💾 Resource Efficiency** - Minimal system impact with embedded functions
+- **🚀 Self-Contained Scripts** - No external dependencies for maximum reliability
 - **🎯 Hybrid Strategy** - Optimized deployment method for each component type
 - **📈 Benchmarked Performance** - Validated execution times with performance grades
 
 ## 🛠️ Getting Started
 
-### 🚀 **Quick Start (GitHub Architecture - Recommended)**
+### 🚀 **Quick Start (Hybrid Deployment Strategy)**
 
 1. **Choose your Datto RMM component category**:
-   - 🔧 **Applications**: Software deployment/installation (up to 30min timeout)
-   - 📊 **Monitors**: System health monitoring (<3 seconds, immutable category)
-   - 📝 **Scripts**: General automation/maintenance (flexible timeout)
+   - 🔧 **Applications**: Software deployment/installation (up to 30min timeout) - **Use launchers**
+   - 📊 **Monitors**: System health monitoring (<3 seconds, immutable category) - **Use direct deployment**
+   - 📝 **Scripts**: General automation/maintenance (flexible timeout) - **Use launchers**
 
-2. **Create a Datto RMM component** with this universal launcher:
+2. **For Applications & Scripts** - Use launcher approach:
    ```powershell
-   # Universal launcher for any component category
+   # Universal launcher for Applications & Scripts only
    $LauncherURL = "https://raw.githubusercontent.com/aybouzaglou/Datto-RMM-Powershell-Scripts/main/launchers/UniversalLauncher.ps1"
    $LauncherPath = "$env:TEMP\UniversalLauncher.ps1"
    [Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject([Net.SecurityProtocolType], 3072)
@@ -275,23 +275,24 @@ scripts/
    & $LauncherPath -ScriptName $env:ScriptName -ScriptType $env:ScriptType
    exit $LASTEXITCODE
    ```
+   **Environment Variables**: `ScriptName` (e.g., "FocusedDebloat.ps1"), `ScriptType` ("Applications" or "Scripts")
 
-3. **Set environment variables** in your Datto RMM component:
-   - `ScriptName`: Name of script file (e.g., "FocusedDebloat.ps1")
-   - `ScriptType`: Component category ("Applications", "Monitors", "Scripts")
-
-4. **Deploy and enjoy** - Scripts auto-update from GitHub with zero maintenance!
+3. **For Monitors** - Use direct deployment:
+   - Copy the entire monitor script content from `components/monitors/YourMonitor.ps1`
+   - Paste directly into Datto RMM Monitor component script field
+   - Set environment variables directly (e.g., `WarningThreshold=15`, `CriticalThreshold=5`)
+   - **98.2% faster performance** with sub-200ms execution times!
 
 ### 📊 **Available Production Scripts**
 
 #### **Applications** (`components/Applications/`)
 - **`ScanSnapHome.ps1`** - ScanSnap Home installation with automatic detection
 
-#### **Monitors** (`components/monitors/`)
-- **`BluescreenMonitor-Direct.ps1`** - Direct deployment bluescreen detection (sub-50ms)
-- **`DiskSpaceMonitor-Direct.ps1`** - Direct deployment disk space monitoring (sub-10ms)
-- **`BluescreenMonitor.ps1`** - Launcher-based bluescreen detection
-- **`DiskSpaceMonitor.ps1`** - Launcher-based disk space monitoring
+#### **Monitors** (`components/monitors/`) - **Direct Deployment Only**
+- **`BluescreenMonitor-Direct.ps1`** - ✅ Direct deployment bluescreen detection (sub-50ms)
+- **`DiskSpaceMonitor-Direct.ps1`** - ✅ Direct deployment disk space monitoring (sub-10ms)
+- **`BluescreenMonitor.ps1`** - ⚠️ Legacy launcher-based version (use direct instead)
+- **`DiskSpaceMonitor.ps1`** - ⚠️ Legacy launcher-based version (use direct instead)
 
 #### **Scripts** (`components/Scripts/`)
 - **`FocusedDebloat.ps1`** - Windows bloatware removal with manufacturer detection
@@ -306,14 +307,16 @@ scripts/
 
 #### **Usage Examples**
 ```powershell
-# Example: Deploy FocusedDebloat script
+# ✅ Scripts: Use launcher approach
 # Environment Variables: ScriptName="FocusedDebloat.ps1", ScriptType="Scripts"
 
-# Example: Deploy disk space monitor (direct deployment recommended)
-# Copy content of DiskSpaceMonitor-Direct.ps1 directly into Datto RMM Monitor component
-
-# Example: Deploy ScanSnap installer
+# ✅ Applications: Use launcher approach
 # Environment Variables: ScriptName="ScanSnapHome.ps1", ScriptType="Applications"
+
+# ✅ Monitors: Use direct deployment (paste entire script content)
+# 1. Copy: components/monitors/DiskSpaceMonitor-Direct.ps1
+# 2. Paste: Directly into Datto RMM Monitor component
+# 3. Variables: WarningThreshold=15, CriticalThreshold=5
 ```
 
 ## 🧪 Testing & Validation
@@ -466,15 +469,16 @@ $LauncherPath = "$env:TEMP\LaunchInstaller.ps1"
 exit $LASTEXITCODE
 ```
 
-### Monitors Component (System Health)
+### Monitors Component (System Health) - Direct Deployment
 ```powershell
-# Datto RMM Custom Monitor Component
-# Environment Variables: ScriptName="DiskSpaceMonitor.ps1", WarningThreshold=15, CriticalThreshold=5
-$LauncherURL = "https://raw.githubusercontent.com/aybouzaglou/Datto-RMM-Powershell-Scripts/main/launchers/LaunchMonitor.ps1"
-$LauncherPath = "$env:TEMP\LaunchMonitor.ps1"
-(New-Object System.Net.WebClient).DownloadFile($LauncherURL, $LauncherPath)
-& $LauncherPath -ScriptName $env:ScriptName
-exit $LASTEXITCODE
+# ✅ RECOMMENDED: Direct deployment for maximum performance
+# 1. Copy entire script content from: components/monitors/DiskSpaceMonitor.ps1
+# 2. Paste directly into Datto RMM Monitor component script field
+# 3. Set environment variables: WarningThreshold=15, CriticalThreshold=5
+# 4. Deploy - Achieves sub-200ms execution times!
+
+# ❌ DEPRECATED: Launcher approach (kept for reference only)
+# Modern monitors use direct deployment for 98.2% better performance
 ```
 
 ### Scripts Component (General Automation)
