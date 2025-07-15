@@ -71,12 +71,17 @@ exit $LASTEXITCODE
 | 🧪 **Tests** | Validation & benchmarks | `tests/` | Performance testing suite | [Testing Section](#-testing--validation) |
 | 📚 **Documentation** | Comprehensive guides | `docs/` | 15+ detailed guides | [Documentation Index](#-documentation-index) |
 
-### **Datto RMM Component Categories**
-| Category | Purpose | Timeout | Changeable | Deployment Strategy | Location |
-|----------|---------|---------|------------|-------------------|----------|
-| 🔧 **Applications** | Software deployment | Up to 30 min | Yes ↔ Scripts | Launcher-based | `components/Applications/` |
-| 📊 **Monitors** | System health checks | <3 seconds | **No** (immutable) | **Direct deployment** | `components/monitors/` |
-| 📝 **Scripts** | General automation | Flexible | Yes ↔ Applications | Launcher-based | `components/Scripts/` |
+### **Datto RMM Component Categories & Deployment Strategy**
+| Category | Purpose | Timeout | Changeable | Deployment Strategy | Dependencies | Location |
+|----------|---------|---------|------------|-------------------|--------------|----------|
+| 🔧 **Applications** | Software deployment | Up to 30 min | Yes ↔ Scripts | **Launcher-based** | Can use shared functions | `components/Applications/` |
+| 📊 **Monitors** | System health checks | <3 seconds | **No** (immutable) | **Direct deployment ONLY** | **Self-contained** | `components/monitors/` |
+| 📝 **Scripts** | General automation | Flexible | Yes ↔ Applications | **Launcher-based** | Can use shared functions | `components/Scripts/` |
+
+**🎯 Critical Architecture Rules:**
+- **Monitors**: Always self-contained, embed functions directly, no external dependencies
+- **Applications/Scripts**: Can use launchers and reference shared functions for auto-updates
+- **Shared Functions**: Reference library only - copy/paste patterns, not runtime dependencies
 
 ### **Deployment Strategy Decision Matrix**
 | Use Case | Recommended Approach | Performance | Maintenance | Best For |
@@ -93,32 +98,46 @@ exit $LASTEXITCODE
 
 ## 📁 Complete Repository Structure
 
-### 🔧 **Shared Function Library** (`shared-functions/`)
+### 📚 **Shared Function Library** (`shared-functions/`) - **REFERENCE ONLY**
+> **⚠️ IMPORTANT**: These are **reference functions and code patterns**, NOT runtime dependencies. Copy/paste into your scripts - do NOT import or dot-source these functions.
+
 ```
 shared-functions/
-├── Core/                       # Core RMM functions
-│   ├── RMMLogging.ps1         # Logging, transcripts, event logs
-│   ├── RMMValidation.ps1      # Input validation, system checks
-│   └── RMMSoftwareDetection.ps1 # Fast software detection (registry-based)
-├── Utilities/                  # Utility functions
-│   ├── NetworkUtils.ps1       # Network operations, downloads
-│   ├── FileOperations.ps1     # File/directory operations
-│   └── RegistryHelpers.ps1    # Registry operations, software detection
-├── EmbeddedMonitorFunctions.ps1 # Lightweight functions for direct deployment
-├── PerformanceMonitorFunctions.ps1 # Performance monitoring utilities
-├── SecurityMonitorFunctions.ps1    # Security monitoring functions
-├── SystemMonitorFunctions.ps1      # System health monitoring
-└── SharedFunctions.ps1        # Master loader with intelligent caching
+├── Core/                       # Core RMM function patterns
+│   ├── RMMLogging.ps1         # Logging, transcripts, event log patterns
+│   ├── RMMValidation.ps1      # Input validation, system check patterns
+│   └── RMMSoftwareDetection.ps1 # Fast software detection patterns (registry-based)
+├── Utilities/                  # Utility function patterns
+│   ├── NetworkUtils.ps1       # Network operations, download patterns
+│   ├── FileOperations.ps1     # File/directory operation patterns
+│   └── RegistryHelpers.ps1    # Registry operation patterns
+├── EmbeddedMonitorFunctions.ps1 # **COPY THESE** into monitor scripts for direct deployment
+├── PerformanceMonitorFunctions.ps1 # Performance monitoring patterns
+├── SecurityMonitorFunctions.ps1    # Security monitoring patterns
+├── SystemMonitorFunctions.ps1      # System health monitoring patterns
+└── SharedFunctions.ps1        # **LAUNCHER USE ONLY** - Not for direct deployment
 ```
 
-### 🚀 **Universal Launchers** (`launchers/`)
+**🎯 Usage Philosophy:**
+- **For Monitors**: Copy functions from `EmbeddedMonitorFunctions.ps1` directly into your script
+- **For Applications/Scripts**: Use launchers (they can reference shared functions)
+- **For Development**: Use as reference patterns and proven code examples
+
+### 🚀 **Universal Launchers** (`launchers/`) - **APPLICATIONS & SCRIPTS ONLY**
+> **⚠️ IMPORTANT**: Launchers are ONLY for Applications and Scripts components. Monitors use direct deployment for maximum performance.
+
 ```
 launchers/
-├── UniversalLauncher.ps1      # Works with all component categories
+├── UniversalLauncher.ps1      # For Applications & Scripts (NOT Monitors)
 ├── LaunchInstaller.ps1        # Optimized for Applications (30min timeout)
-├── LaunchMonitor.ps1          # Optimized for Monitors (3sec timeout)
+├── LaunchMonitor.ps1          # ❌ DEPRECATED - Monitors use direct deployment
 └── LaunchScripts.ps1          # Optimized for Scripts (flexible timeout)
 ```
+
+**🎯 Launcher Usage:**
+- **✅ Applications**: Use launchers for auto-updating software deployment
+- **✅ Scripts**: Use launchers for auto-updating automation scripts
+- **❌ Monitors**: NEVER use launchers - direct deployment only for performance
 
 ### 📦 **Production Components** (`components/`)
 ```
@@ -339,13 +358,14 @@ Every push triggers enterprise-grade validation:
 ### **🎯 For LLM Assistants & Developers**
 | Task | Primary Documentation | Secondary Resources |
 |------|----------------------|-------------------|
-| **Understanding Architecture** | [GitHub Function Library Guide](docs/GitHub-Function-Library-Guide.md) | [Architecture Overview](#-architecture-overview) |
+| **🏗️ Understanding Architecture** | **[Architecture Philosophy](docs/Architecture-Philosophy.md)** | [GitHub Function Library Guide](docs/GitHub-Function-Library-Guide.md) |
 | **Creating New Scripts** | [Templates](#-templates--examples) | [Function Reference](docs/Function-Reference.md) |
 | **Deployment Strategies** | [Deployment Guide](docs/Deployment-Guide.md) | [Component Categories](docs/Datto-RMM-Component-Categories.md) |
 | **Performance Optimization** | [Monitor Performance Guide](docs/Monitor-Performance-Optimization-Guide.md) | [Direct Deployment Guide](docs/Direct-Deployment-Guide.md) |
 | **Technician Support** | [Tech Quick Reference](docs/Tech-Quick-Reference-Card.md) | [Technician Deployment Guide](docs/Technician-Deployment-Guide.md) |
 
 ### **📋 Complete Documentation List**
+- **[🏗️ Architecture Philosophy](docs/Architecture-Philosophy.md)** - **ESSENTIAL** - Core design principles and constraints
 - **[GitHub Function Library Guide](docs/GitHub-Function-Library-Guide.md)** - Complete architecture overview
 - **[Function Reference](docs/Function-Reference.md)** - Detailed function documentation (50+ functions)
 - **[Deployment Guide](docs/Deployment-Guide.md)** - 15-minute setup walkthrough
@@ -519,8 +539,11 @@ This project is provided as-is for educational and operational use with Datto RM
 
 ### **Key Constraints for LLM Assistants**
 - **❌ Never suggest API deployment** - This repo uses manual deployment only
+- **❌ Never suggest shared function imports for monitors** - Monitors must be self-contained
+- **❌ Never suggest launchers for monitors** - Direct deployment only for performance
 - **✅ Always use direct deployment for monitors** - 98.2% performance improvement
-- **✅ Reference existing shared functions** - 50+ functions available in `shared-functions/`
+- **✅ Copy functions from shared-functions/ into scripts** - Reference library, not dependencies
+- **✅ Use launchers only for Applications/Scripts** - Never for monitors
 - **✅ Use templates as starting points** - Don't create scripts from scratch
 - **✅ Follow component category rules** - Monitors are immutable, Applications/Scripts are changeable
 - **✅ Include performance considerations** - Monitors must execute in <3 seconds
@@ -529,8 +552,10 @@ This project is provided as-is for educational and operational use with Datto RM
 - **Performance-first** - Direct deployment for monitors, launcher-based for flexibility
 - **Enterprise-grade** - GitHub Actions validation, comprehensive testing
 - **Manual deployment** - Simple, reliable, controlled (no API complexity)
-- **Shared functions** - Consistent, reusable, well-tested components
+- **Shared functions as reference** - Copy/paste patterns, NOT runtime dependencies
 - **Documentation-driven** - Comprehensive guides for every use case
+
+**📖 [Complete Architecture Philosophy](docs/Architecture-Philosophy.md)** - Essential reading for understanding the design decisions
 
 ---
 

@@ -1,27 +1,40 @@
 <#
 .SYNOPSIS
-Embedded Monitor Functions - Lightweight Function Library for Direct Deployment
+Embedded Monitor Functions - COPY/PASTE Reference Library for Direct Deployment
 
 .DESCRIPTION
-Ultra-lightweight function library designed for embedding directly into monitor scripts.
-Optimized for <200ms execution times with zero external dependencies.
+⚠️ CRITICAL: These are REFERENCE FUNCTIONS for copying into monitor scripts.
+DO NOT import, dot-source, or create dependencies on this file.
+
+🎯 PURPOSE: Provide tried-and-true function patterns for monitor development
+📊 PERFORMANCE: Optimized for <200ms execution times with zero external dependencies
+🔒 DEPLOYMENT: Self-contained monitors only - no network dependencies
+
+.ARCHITECTURE PHILOSOPHY
+- Monitors must be 100% self-contained for maximum reliability
+- Copy these functions directly into your monitor scripts
+- No external dependencies, no network calls, no shared function imports
+- Proven patterns that work reliably in Datto RMM environment
+
+.USAGE INSTRUCTIONS
+1. Find the function you need below
+2. Copy the entire function into your monitor script
+3. Customize as needed for your specific use case
+4. Test for <3 second execution time requirement
+
+❌ DO NOT: Import, dot-source, or reference this file
+✅ DO: Copy functions directly into your scripts
+
+.PERFORMANCE CHARACTERISTICS (Validated)
+- Get-RMMVariable: <1ms execution time
+- Write-MonitorAlert: <1ms execution time
+- Test-MonitorSoftware: 25-50ms execution time
+- Test-RMMProcess: <5ms execution time
 
 .NOTES
-Version: 1.0.0
+Version: 2.0.0
 Author: Datto RMM Performance Optimization Team
-Purpose: Provide essential functions for direct deployment monitors
-Performance: Optimized for minimal overhead and fast execution
-
-USAGE:
-Copy and paste these functions directly into your monitor scripts.
-Do NOT dot-source this file - embed functions for zero dependency deployment.
-
-PERFORMANCE CHARACTERISTICS:
-- Get-RMMVariable: <1ms execution time
-- Write-MonitorAlert: <1ms execution time  
-- Write-MonitorLog: <1ms execution time (no-op for performance)
-- Write-MonitorSuccess: <1ms execution time
-- Test-RMMEnvironment: <5ms execution time
+Updated: Enhanced for copy/paste reference architecture
 #>
 
 ############################################################################################################
