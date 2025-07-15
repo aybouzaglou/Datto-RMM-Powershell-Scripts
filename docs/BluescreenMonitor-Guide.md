@@ -128,9 +128,17 @@ CRITICAL: Bluescreen monitor failed: Access denied to event log
 **Cause**: Event log service issues or corrupted logs
 **Solution**: Check Windows Event Log service status
 
+#### "No Data" Issues
+**Cause**: Monitor output not being written properly or boolean parsing errors
+**Solution**: Check environment variable format - use "true"/"false" or "1"/"0" for boolean values
+
 #### Timeout Issues
 **Cause**: Large event logs or slow system performance
 **Solution**: Reduce `DaysToCheck` parameter or check system performance
+
+#### PowerShell Version Issues
+**Cause**: Script requires PowerShell 3.0+ for Get-WinEvent FilterHashtable
+**Solution**: Ensure target systems have PowerShell 3.0 or later
 
 ### Testing the Monitor
 

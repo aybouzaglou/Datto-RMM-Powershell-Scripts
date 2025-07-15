@@ -33,7 +33,7 @@ Include detailed BSOD information in the output (default: true)
 Version: 1.0.0
 Author: Enhanced for Datto RMM Function Library
 Component Category: Monitors (System Health Monitoring)
-Compatible: PowerShell 2.0+, Datto RMM Environment
+Compatible: PowerShell 3.0+, Datto RMM Environment
 
 Datto RMM Monitors Exit Codes:
 - 0: OK/Green (no blue screens found)
@@ -85,8 +85,16 @@ if ($Global:RMMFunctionsLoaded -and (Get-Command Get-RMMVariable -ErrorAction Si
     $IncludeDetails = Get-RMMVariable -Name "IncludeDetails" -Type "Boolean" -Default $IncludeDetails
 } else {
     # Fallback environment variable handling
-    if ($env:DaysToCheck) { $DaysToCheck = [int]$env:DaysToCheck }
-    if ($env:IncludeDetails) { $IncludeDetails = [bool]::Parse($env:IncludeDetails) }
+    if ($env:DaysToCheck) {
+        try {
+            $DaysToCheck = [int]$env:DaysToCheck
+        } catch {
+            Write-MonitorLog "Invalid DaysToCheck value: $env:DaysToCheck, using default: $DaysToCheck" -Level Warning
+        }
+    }
+    if ($env:IncludeDetails) {
+        $IncludeDetails = ($env:IncludeDetails -eq 'true' -or $env:IncludeDetails -eq '1' -or $env:IncludeDetails -eq 'yes')
+    }
 }
 
 ############################################################################################################
@@ -95,7 +103,11 @@ if ($Global:RMMFunctionsLoaded -and (Get-Command Get-RMMVariable -ErrorAction Si
 
 try {
     Write-MonitorLog "Starting bluescreen check for past $DaysToCheck days" -Level Info
-    
+
+    # Add timeout protection (leave 0.5 seconds buffer for the 3-second requirement)
+    $timeout = 2.5
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
     # Calculate the start time for our search
     $startTime = (Get-Date).AddDays(-$DaysToCheck)
     
@@ -112,42 +124,53 @@ try {
     
     # Check each event type
     foreach ($eventType in $eventIds) {
+        # Check timeout
+        if ($stopwatch.ElapsedMilliseconds -gt ($timeout * 1000)) {
+            Write-MonitorLog "Timeout reached, stopping event checks" -Level Warning
+            break
+        }
+
         try {
             Write-MonitorLog "Checking $($eventType.Log) log for Event ID $($eventType.Id)" -Level Info
-            
+
             # Use Get-WinEvent for better performance and filtering
             $filterHashtable = @{
                 LogName = $eventType.Log
                 ID = $eventType.Id
                 StartTime = $startTime
             }
-            
-            # Add source filter if specified
-            if ($eventType.Source -ne "EventLog") {
+
+            # Add source filter if specified and not EventLog
+            if ($eventType.Source -and $eventType.Source -ne "EventLog") {
                 $filterHashtable.ProviderName = $eventType.Source
             }
-            
-            $events = Get-WinEvent -FilterHashtable $filterHashtable -ErrorAction SilentlyContinue
-            
+
+            $events = Get-WinEvent -FilterHashtable $filterHashtable -ErrorAction Stop
+
             if ($events) {
-                foreach ($event in $events) {
+                foreach ($logEvent in $events) {
                     $eventInfo = [PSCustomObject]@{
-                        TimeCreated = $event.TimeCreated
-                        EventId = $event.Id
-                        LogName = $event.LogName
-                        Source = $event.ProviderName
+                        TimeCreated = $logEvent.TimeCreated
+                        EventId = $logEvent.Id
+                        LogName = $logEvent.LogName
+                        Source = $logEvent.ProviderName
                         Description = $eventType.Description
-                        Message = $event.Message.Substring(0, [Math]::Min(200, $event.Message.Length))
+                        Message = $logEvent.Message.Substring(0, [Math]::Min(200, $logEvent.Message.Length))
                     }
-                    
+
                     $bluescreenEvents += $eventInfo
                     $totalBSODs++
-                    
-                    Write-MonitorLog "Found BSOD event: $($eventType.Description) at $($event.TimeCreated)" -Level Warning
+
+                    Write-MonitorLog "Found BSOD event: $($eventType.Description) at $($logEvent.TimeCreated)" -Level Warning
                 }
             }
-        } catch {
-            Write-MonitorLog "Error checking $($eventType.Log) log: $($_.Exception.Message)" -Level Warning
+        } catch [System.Exception] {
+            if ($_.Exception.Message -like "*No events were found*") {
+                # This is expected - no events found
+                Write-MonitorLog "No events found for $($eventType.Description)" -Level Info
+            } else {
+                Write-MonitorLog "Event log access error for $($eventType.Log): $($_.Exception.Message)" -Level Warning
+            }
         }
     }
     
@@ -183,14 +206,14 @@ try {
         # Add details if requested and within reasonable length
         if ($IncludeDetails -and $bluescreenEvents.Count -gt 0) {
             $details = @()
-            foreach ($event in $bluescreenEvents | Select-Object -First 3) {
-                $details += "$($event.TimeCreated.ToString('MM/dd HH:mm')) - $($event.Description)"
+            foreach ($bsodEvent in $bluescreenEvents | Select-Object -First 3) {
+                $details += "$($bsodEvent.TimeCreated.ToString('MM/dd HH:mm')) - $($bsodEvent.Description)"
             }
-            
+
             if ($details.Count -gt 0) {
                 $message += " | Recent events: " + ($details -join "; ")
             }
-            
+
             if ($bluescreenEvents.Count -gt 3) {
                 $message += " (and $($bluescreenEvents.Count - 3) more)"
             }
@@ -203,23 +226,44 @@ try {
     if ($Global:RMMFunctionsLoaded -and (Get-Command Write-RMMMonitorResult -ErrorAction SilentlyContinue)) {
         Write-RMMMonitorResult -Status $status -Message $message -ExitCode $exitCode
     } else {
-        # Fallback monitor output
-        Write-Host "<-Start Result->"
-        Write-Host "${status}: $message"
-        Write-Host "<-End Result->"
+        # Fallback monitor output with validation
+        try {
+            Write-Host "<-Start Result->"
+            Write-Host "${status}: $message"
+            Write-Host "<-End Result->"
+
+            # Validate output was written
+            if (-not $?) {
+                Write-Host "CRITICAL: Failed to write monitor output"
+                exit 1
+            }
+        } catch {
+            Write-Host "CRITICAL: Monitor output error: $($_.Exception.Message)"
+            exit 1
+        }
         exit $exitCode
     }
     
 } catch {
     # Critical error in monitor
     $errorMessage = "Bluescreen monitor failed: $($_.Exception.Message)"
-    
+
     if ($Global:RMMFunctionsLoaded -and (Get-Command Write-RMMMonitorResult -ErrorAction SilentlyContinue)) {
         Write-RMMMonitorResult -Status "CRITICAL" -Message $errorMessage -ExitCode 1
     } else {
-        Write-Host "<-Start Result->"
-        Write-Host "CRITICAL: $errorMessage"
-        Write-Host "<-End Result->"
+        try {
+            Write-Host "<-Start Result->"
+            Write-Host "CRITICAL: $errorMessage"
+            Write-Host "<-End Result->"
+
+            # Validate output was written
+            if (-not $?) {
+                Write-Host "CRITICAL: Failed to write error output"
+            }
+        } catch {
+            # Last resort - try to output something
+            Write-Host "CRITICAL: Monitor completely failed"
+        }
         exit 1
     }
 }

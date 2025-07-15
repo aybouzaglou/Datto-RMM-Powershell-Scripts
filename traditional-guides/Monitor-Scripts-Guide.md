@@ -210,6 +210,11 @@ Understanding how exit codes work across different Datto RMM job types is crucia
 - Must complete in < 3 seconds
 - Use timeouts for any external operations
 
+### PowerShell Version Compatibility
+- **PowerShell 2.0**: Use `Get-EventLog` and basic cmdlets only
+- **PowerShell 3.0+**: Can use `Get-WinEvent` with `FilterHashtable` for better performance
+- **Check version**: `$PSVersionTable.PSVersion.Major` before using advanced features
+
 ### Output Format (REQUIRED)
 - Wrap output in `<-Start Result->` and `<-End Result->` markers
 - Use status prefixes: OK:, WARNING:, CRITICAL:
@@ -498,7 +503,9 @@ $env:WarningDays = "30"
 
 - All input variables are strings (even booleans)
 - Access via `$env:VariableName`
-- Boolean check: `$env:BoolVar -eq 'true'`
+- **Boolean parsing**: Use `($env:BoolVar -eq 'true' -or $env:BoolVar -eq '1' -or $env:BoolVar -eq 'yes')`
+- **Never use**: `[bool]::Parse($env:BoolVar)` - will throw exceptions on invalid input
+- **Integer parsing**: Wrap in try/catch: `try { [int]$env:IntVar } catch { $defaultValue }`
 
 ### Exit Codes (Monitor-Specific)
 
