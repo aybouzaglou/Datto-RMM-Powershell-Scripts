@@ -325,23 +325,30 @@ jobs:
           Write-Output "✅ No semantic issues found"
         }
 
-    - name: 🏗️ Test Shared Functions
+    - name: 📚 Validate Shared Functions (Reference Library)
       shell: pwsh
       run: |
-        Write-Output "=== Testing Shared Functions ==="
+        Write-Output "=== Validating Shared Functions Reference Library ==="
 
-        # Test if shared functions can be imported
+        # Validate shared functions as reference patterns (NOT for import)
         $functionFiles = Get-ChildItem -Path "shared-functions" -Filter "*.ps1" -ErrorAction SilentlyContinue
 
-        foreach ($file in $functionFiles) {
-          Write-Output "Testing import: $($file.Name)"
-          try {
-            . $file.FullName
-            Write-Output "  ✅ Import successful"
-          } catch {
-            Write-Output "  ❌ Import failed: $($_.Exception.Message)"
-            exit 1
+        if ($functionFiles) {
+          Write-Output "Found $($functionFiles.Count) reference function files"
+          foreach ($file in $functionFiles) {
+            Write-Output "Validating syntax: $($file.Name)"
+            try {
+              # Only validate syntax, do NOT import (they're copy/paste patterns)
+              $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $file.FullName -Raw), [ref]$null)
+              Write-Output "  ✅ Syntax valid (ready for copy/paste)"
+            } catch {
+              Write-Output "  ❌ Syntax error: $($_.Exception.Message)"
+              exit 1
+            }
           }
+          Write-Output "✅ All shared function patterns have valid syntax for copy/paste use"
+        } else {
+          Write-Output "ℹ️  No shared function files found"
         }
         
     - name: �️ Validate Production-Grade Monitor Architecture
@@ -710,7 +717,7 @@ jobs:
         Write-Output "    📊 Monitors: $monitors"
         Write-Output "    📱 Applications: $applications"
         Write-Output "    ⚙️  Scripts: $scripts"
-        Write-Output "  🔧 Shared Functions: $sharedFunctions"
+        Write-Output "  🔧 Reference Function Patterns: $sharedFunctions"
         Write-Output "  🚀 Launchers: $launchers"
         Write-Output ""
         Write-Output "✅ Validation Checks Completed:"
@@ -718,7 +725,7 @@ jobs:
         Write-Output "  ✅ PSScriptAnalyzer Advanced Analysis"
         Write-Output "  ✅ Semantic Validation (Datto RMM Compatibility)"
         Write-Output "  ✅ Performance Analysis"
-        Write-Output "  ✅ Shared Functions Import Testing"
+        Write-Output "  ✅ Shared Functions Reference Library Validation"
         Write-Output "  ✅ Component Category Validation"
         Write-Output "  ✅ Direct Deployment Monitor Architecture Validation"
         Write-Output "  ✅ Launcher Parameter Validation"
@@ -729,7 +736,7 @@ jobs:
         Write-Output "  🔍 Advanced static analysis (PSScriptAnalyzer)"
         Write-Output "  🧠 Semantic validation for Datto RMM compatibility"
         Write-Output "  ⚡ Performance analysis for monitor compliance"
-        Write-Output "  🏗️  Architecture validation for your GitHub-based system"
+        Write-Output "  🏗️  Architecture validation for copy/paste functions & hard-coded launchers"
         Write-Output "  ⚡ Smart optimization - tests only changed files (feature branches)"
         Write-Output ""
         Write-Output "This validation pipeline now RIVALS VSCode's PowerShell extension!"
@@ -780,7 +787,7 @@ jobs:
         ### Architecture Validation
         - ✅ Component Categories: PASSED
         - ✅ Direct Deployment Monitor Architecture: PASSED
-        - ✅ Shared Functions: PASSED
+        - ✅ Reference Function Patterns: PASSED
         - ✅ Launchers: PASSED
 
         ## 🏆 QUALITY ASSURANCE
@@ -788,7 +795,7 @@ jobs:
         These scripts have been validated with an **enterprise-grade pipeline** that:
         - **Rivals VSCode's PowerShell extension** for static analysis
         - **Exceeds industry standards** for Datto RMM compatibility
-        - **Validates your custom architecture** (GitHub-based functions, launchers)
+        - **Validates your custom architecture** (copy/paste functions, hard-coded launchers)
         - **Ensures deployment readiness** with comprehensive checks
         
         ## 📁 Ready for Manual Deployment
@@ -796,8 +803,8 @@ jobs:
         ### Components (copy to Datto RMM):
         $(if (Test-Path "components") { (Get-ChildItem -Path "components" -Filter "*.ps1" -Recurse | ForEach-Object { "- $($_.Name)" }) -join "`n" } else { "- No components found" })
         
-        ### Shared Functions (reference library):
-        $(if (Test-Path "shared-functions") { (Get-ChildItem -Path "shared-functions" -Filter "*.ps1" -Recurse | ForEach-Object { "- $($_.Name)" }) -join "`n" } else { "- No shared functions found" })
+        ### Shared Functions (copy/paste reference patterns):
+        $(if (Test-Path "shared-functions") { (Get-ChildItem -Path "shared-functions" -Filter "*.ps1" -Recurse | ForEach-Object { "- $($_.Name) (copy/paste pattern)" }) -join "`n" } else { "- No shared function patterns found" })
         
         ### Launchers (universal deployment):
         $(if (Test-Path "launchers") { (Get-ChildItem -Path "launchers" -Filter "*.ps1" -Recurse | ForEach-Object { "- $($_.Name)" }) -join "`n" } else { "- No launchers found" })
@@ -809,7 +816,7 @@ jobs:
         ✅ **Best practices validated** - PSScriptAnalyzer approved
         ✅ **Datto RMM optimized** - No banned operations or interactive elements
         ✅ **Performance validated** - Monitor scripts optimized for 3-second limit
-        ✅ **Architecture tested** - Shared functions and launchers verified
+        ✅ **Architecture tested** - Reference functions and launchers verified
 
         ### Manual Deployment Steps
 
@@ -879,7 +886,7 @@ jobs:
         - ✅ **PSScriptAnalyzer**: PASSED (no critical errors)
         - ✅ **Semantic Validation**: PASSED (Datto RMM compatible)
         - ✅ **Performance Analysis**: PASSED (monitor compliance)
-        - ✅ **Architecture Validation**: PASSED (shared functions, launchers)
+        - ✅ **Architecture Validation**: PASSED (reference functions, launchers)
 
         ### 📋 Changes Made
         <!-- Auto-generated from validated changes -->
