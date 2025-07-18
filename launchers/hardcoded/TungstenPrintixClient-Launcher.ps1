@@ -107,11 +107,11 @@ try {
         }
     } elseif ((Test-Path $scriptPath) -and -not $ForceDownload) {
         $fileAge = (Get-Date) - (Get-Item $scriptPath).LastWriteTime
-        if ($fileAge.TotalMinutes -lt 60) {
-            Write-Output "Using cached script (less than 1 hour old)"
+        if ($fileAge.TotalMinutes -lt 5) {
+            Write-Output "Using cached script (less than 5 minutes old)"
             $shouldDownload = $false
         } else {
-            Write-Output "Cached script is older than 1 hour - will re-download"
+            Write-Output "Cached script is older than 5 minutes - will re-download"
         }
     }
     
