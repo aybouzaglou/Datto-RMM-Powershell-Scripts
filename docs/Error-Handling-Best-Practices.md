@@ -291,6 +291,53 @@ try {
 - ✅ Exit codes are meaningful
 - ✅ Logs provide useful troubleshooting information
 
+## 🚀 Launcher Caching Best Practices
+
+### **Always Use Short Cache Timeouts**
+Use short cache timeouts (5 minutes or less) for all launchers to ensure scripts stay current:
+
+```powershell
+# ✅ RECOMMENDED - Short cache always (5 minutes)
+if ($fileAge.TotalMinutes -lt 5) {
+    Write-Output "Using cached script (less than 5 minutes old)"
+    $shouldDownload = $false
+} else {
+    Write-Output "Cached script is older than 5 minutes - will re-download"
+}
+
+# ❌ AVOID - Long cache timeouts (60+ minutes)
+if ($fileAge.TotalMinutes -lt 60) {
+    Write-Output "Using cached script (less than 1 hour old)"
+    $shouldDownload = $false
+}
+```
+
+### **Even Better: Always Try Download Approach**
+The best approach is to always attempt download and only use cache as fallback:
+
+```powershell
+# ✅ BEST PRACTICE - Always try download first
+if (-not $OfflineMode) {
+    try {
+        Write-Output "Downloading latest script from GitHub..."
+        (New-Object System.Net.WebClient).DownloadFile($scriptURL, $scriptPath)
+        Write-Output "✓ Downloaded latest script"
+    } catch {
+        Write-Output "⚠️ Download failed - using cached version as fallback"
+        if (-not (Test-Path $scriptPath)) {
+            throw "No cached version available and download failed"
+        }
+    }
+}
+```
+
+### **Why Short Cache Times Matter**
+- ✅ **Always current** - Scripts stay up-to-date with latest fixes
+- ✅ **Faster issue resolution** - Bug fixes are picked up quickly
+- ✅ **Better reliability** - Reduces stale script problems
+- ✅ **Consistent behavior** - Same approach for development and production
+- ✅ **Network efficient** - Still provides caching benefits for rapid re-runs
+
 ## 📖 References
 
 - **[Function Reference](Function-Reference.md)** - Proper function usage

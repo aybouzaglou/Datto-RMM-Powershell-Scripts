@@ -51,6 +51,52 @@ if (Test-Path $InstallerFile) {
 
 **📖 See**: [File Attachment Guide](Datto-RMM-File-Attachment-Guide.md) for complete details
 
+## 🕒 Launcher Caching Standards
+
+### **Cache Timeout Policy**
+All launchers should use **short cache timeouts (5 minutes or less)** to ensure scripts stay current:
+
+#### **✅ Recommended Approach: Always Try Download**
+```powershell
+# Best practice - always attempt fresh download
+if (-not $OfflineMode) {
+    try {
+        Write-Output "Downloading latest script..."
+        (New-Object System.Net.WebClient).DownloadFile($scriptURL, $scriptPath)
+        Write-Output "✓ Using latest script from GitHub"
+    } catch {
+        Write-Output "⚠️ Download failed - using cached version"
+        if (-not (Test-Path $scriptPath)) {
+            throw "No cached version available"
+        }
+    }
+}
+```
+
+#### **✅ Acceptable: Short Cache Timeout**
+```powershell
+# If using time-based caching, keep it short
+$fileAge = (Get-Date) - (Get-Item $scriptPath).LastWriteTime
+if ($fileAge.TotalMinutes -lt 5) {  # 5 minutes max
+    Write-Output "Using cached script (less than 5 minutes old)"
+    $shouldDownload = $false
+}
+```
+
+#### **❌ Avoid: Long Cache Timeouts**
+```powershell
+# DON'T DO THIS - causes stale script issues
+if ($fileAge.TotalMinutes -lt 60) {  # Too long!
+    $shouldDownload = $false
+}
+```
+
+### **Why Short Cache Times Matter**
+- ✅ **Bug fixes deploy quickly** - Critical fixes reach production faster
+- ✅ **Consistent behavior** - Same approach for all environments
+- ✅ **Reduced support issues** - Fewer problems from stale scripts
+- ✅ **Better testing experience** - Changes are reflected immediately
+
 ## Datto RMM Component Configuration
 
 ### Method 1: Enhanced Existing Scripts

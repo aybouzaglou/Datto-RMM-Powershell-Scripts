@@ -434,7 +434,11 @@ When working with this repository:
    - ✅ **Always wrap entire script in try-catch** (not just parts)
    - ✅ **Handle empty strings in logging functions** with `[AllowEmptyString()]`
    - ✅ **Continue execution when safe** (only terminate on critical errors)
-7. **Test with GitHub Actions** before suggesting deployment
+7. **🚨 CRITICAL: Use short cache timeouts** for all launchers (5 minutes or less)
+   - ❌ **Never use long cache timeouts** (60+ minutes) that cause stale script issues
+   - ✅ **Always prefer "try download first"** approach over time-based caching
+   - ✅ **Use cache only as fallback** when download fails
+8. **Test with GitHub Actions** before suggesting deployment
 
 ### **Development Workflow**
 ```powershell

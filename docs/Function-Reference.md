@@ -468,9 +468,32 @@ try {
 
 **📖 See**: [Error Handling Best Practices](Error-Handling-Best-Practices.md) for complete guide
 
+## Launcher Caching Standards
+
+### **Cache Timeout Policy**
+- ✅ **Use 5 minutes or less** for all launcher cache timeouts
+- ✅ **Always try download first** - use cache only as fallback
+- ❌ **Avoid long cache times** (60+ minutes) that cause stale script issues
+
+### **Recommended Patterns**
+```powershell
+# Best: Always try download
+try {
+    (New-Object System.Net.WebClient).DownloadFile($scriptURL, $scriptPath)
+} catch {
+    if (Test-Path $scriptPath) { Write-Output "Using cached fallback" }
+}
+
+# Good: Short cache timeout
+if ($fileAge.TotalMinutes -lt 5) {
+    $shouldDownload = $false
+}
+```
+
 ## Performance Considerations
 
 - Monitor scripts should embed only minimal functions needed for speed
 - Use `-UpdateCounters $false` in monitor logging functions to avoid counter overhead
+- Launcher cache timeouts should be 5 minutes or less for all environments
 - ⚠️ **DEPRECATED**: Cache system (modern scripts embed functions directly)
 - ⚠️ **DEPRECATED**: Offline mode (modern scripts are self-contained)
