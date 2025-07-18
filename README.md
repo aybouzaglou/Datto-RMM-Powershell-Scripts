@@ -41,10 +41,6 @@ docs/              # Documentation
 ### Applications
 - `ScanSnapHome.ps1` - ScanSnap Home installation
 
-### Monitors
-- `BluescreenMonitor.ps1` - Windows bluescreen detection
-- `DiskSpaceMonitor.ps1` - Disk space monitoring
-
 ### Scripts
 - `FocusedDebloat.ps1` - Windows bloatware removal
 - `Setup-TestDevice.ps1` - Test device configuration

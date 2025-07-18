@@ -17,8 +17,6 @@ You can start using scripts immediately with direct deployment:
 **Self-Contained Scripts (All Components)**
 - `components/Scripts/FocusedDebloat.ps1` - Windows debloat script with embedded functions
 - `components/Applications/ScanSnapHome.ps1` - ScanSnap installer with embedded functions (uses file attachment)
-- `components/Applications/TungstenPrintixClient.ps1` - Printix client installer with embedded functions (uses file attachment)
-- `components/Monitors/DiskSpaceMonitor.ps1` - Disk space monitor with embedded functions
 
 **Deployment Method: Direct Paste**
 - Copy entire script content and paste directly into Datto RMM component
@@ -113,13 +111,6 @@ skipdell = false
 skiplenovo = false
 ```
 
-**For DiskSpaceMonitor.ps1:**
-```
-WarningThreshold = 15
-CriticalThreshold = 5
-DriveLetters = C,D
-```
-
 **For ScanSnapHome.ps1:**
 ```
 (No specific environment variables - script handles detection automatically)
@@ -152,10 +143,7 @@ DriveLetters = C,D
    - **Attach installer files** using Datto RMM file attachment feature
    - Test installation detection and process
 
-3. **Test Disk Space Monitor**:
-   - Copy entire content from `components/Monitors/DiskSpaceMonitor.ps1`
-   - Paste directly into Datto RMM Custom Monitor component
-   - Configure thresholds: `WarningThreshold = 15`, `CriticalThreshold = 5`
+
 
 ### Phase 2: Gradual Migration (1-2 weeks)
 1. **Migrate High-Value Scripts**:
@@ -195,20 +183,7 @@ Script Content: [Paste entire content from components/Applications/ScanSnapHome.
 File Attachments: ScanSnap Home installer files
 ```
 
-### Monitor Component
-```
-Component Name: Disk Space Monitor
-Component Type: Custom Monitor
-Script Language: PowerShell
-Timeout: 3 seconds
 
-Environment Variables:
-- WarningThreshold (Integer): 15
-- CriticalThreshold (Integer): 5
-- DriveLetters (String): "C,D"
-
-Script Content: [Paste entire content from components/Monitors/DiskSpaceMonitor.ps1]
-```
 
 ### Maintenance Component
 ```

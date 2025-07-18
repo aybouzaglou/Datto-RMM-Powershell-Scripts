@@ -743,35 +743,7 @@ Write-Output "Removing HP Win32 applications..."
 foreach ($HPWin32App in $HPWin32Apps) {
     Write-Output "Searching for: $HPWin32App"
 
-    # Method 1: Try Win32_Product (CIM)
-    $app = Get-CimInstance -Query "SELECT * FROM Win32_Product WHERE name = '$HPWin32App'" -ErrorAction SilentlyContinue
-    if ($app) {
-        Write-Output "Found $HPWin32App via Win32_Product - Removing..."
-        try {
-            $app | Invoke-CimMethod -MethodName Uninstall
-            Write-Output "Removed $HPWin32App via Win32_Product"
-            continue
-        }
-        catch {
-            Write-Output "Failed to remove $HPWin32App via Win32_Product: $($_.Exception.Message)"
-        }
-    }
-
-    # Method 2: Try WMI Win32_Product
-    $wmiApp = Get-WmiObject -Class Win32_Product -Filter "Name = '$HPWin32App'" -ErrorAction SilentlyContinue
-    if ($wmiApp) {
-        Write-Output "Found $HPWin32App via WMI - Removing..."
-        try {
-            $wmiApp.Uninstall()
-            Write-Output "Removed $HPWin32App via WMI"
-            continue
-        }
-        catch {
-            Write-Output "Failed to remove $HPWin32App via WMI: $($_.Exception.Message)"
-        }
-    }
-
-    # Method 3: Try registry-based uninstall
+    # Registry-based uninstall (Win32_Product is banned in Datto RMM)
     $uninstallKeys = @(
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
         "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
@@ -926,15 +898,25 @@ $DellWin32Apps = @(
 
 Write-Output "Removing Dell Win32 applications..."
 foreach ($DellWin32App in $DellWin32Apps) {
-    $app = Get-CimInstance -Query "SELECT * FROM Win32_Product WHERE name = '$DellWin32App'" -ErrorAction SilentlyContinue
-    if ($app) {
-        Write-Output "Removing $DellWin32App"
-        try {
-            $app | Invoke-CimMethod -MethodName Uninstall
-            Write-Output "Removed $DellWin32App"
-        }
-        catch {
-            Write-Output "Failed to remove $DellWin32App"
+    # Registry-based uninstall (Win32_Product is banned in Datto RMM)
+    $uninstallKeys = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+
+    foreach ($key in $uninstallKeys) {
+        $apps = Get-ItemProperty $key -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq $DellWin32App }
+        foreach ($app in $apps) {
+            if ($app.UninstallString) {
+                Write-Output "Removing $DellWin32App via registry"
+                try {
+                    Start-Process -FilePath "cmd.exe" -ArgumentList "/c", $app.UninstallString, "/quiet" -Wait -NoNewWindow
+                    Write-Output "Removed $DellWin32App"
+                }
+                catch {
+                    Write-Output "Failed to remove $DellWin32App"
+                }
+            }
         }
     }
 }
@@ -1065,15 +1047,25 @@ $LenovoWin32Apps = @(
 
 Write-Output "Removing Lenovo Win32 applications..."
 foreach ($LenovoWin32App in $LenovoWin32Apps) {
-    $app = Get-CimInstance -Query "SELECT * FROM Win32_Product WHERE name = '$LenovoWin32App'" -ErrorAction SilentlyContinue
-    if ($app) {
-        Write-Output "Removing $LenovoWin32App"
-        try {
-            $app | Invoke-CimMethod -MethodName Uninstall
-            Write-Output "Removed $LenovoWin32App"
-        }
-        catch {
-            Write-Output "Failed to remove $LenovoWin32App"
+    # Registry-based uninstall (Win32_Product is banned in Datto RMM)
+    $uninstallKeys = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+
+    foreach ($key in $uninstallKeys) {
+        $apps = Get-ItemProperty $key -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq $LenovoWin32App }
+        foreach ($app in $apps) {
+            if ($app.UninstallString) {
+                Write-Output "Removing $LenovoWin32App via registry"
+                try {
+                    Start-Process -FilePath "cmd.exe" -ArgumentList "/c", $app.UninstallString, "/quiet" -Wait -NoNewWindow
+                    Write-Output "Removed $LenovoWin32App"
+                }
+                catch {
+                    Write-Output "Failed to remove $LenovoWin32App"
+                }
+            }
         }
     }
 }
