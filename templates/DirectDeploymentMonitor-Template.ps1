@@ -1,54 +1,15 @@
 <#
 .SYNOPSIS
-Direct Deployment Monitor Template - Production Optimized
+Monitor Template
 
 .DESCRIPTION
-Template for creating high-performance direct deployment monitors:
-- ZERO external dependencies - all functions embedded
-- Sub-200ms execution time optimized
-- No network calls during execution
-- Production-grade diagnostic-first architecture
-- Embedded lightweight function library
-- Optimized for high-frequency execution (every 1-2 minutes)
-
-.COMPONENT
-Category: Monitors (System Health Monitoring)
-Deployment: DIRECT (paste script content directly into Datto RMM)
-Execution: <200ms (performance optimized)
-Dependencies: NONE (fully self-contained)
+Template for creating Datto RMM monitor scripts with embedded functions.
 
 .PARAMETER YourParameter
-Description of your parameter (customize as needed)
-
-.EXAMPLE
-# Datto RMM Direct Deployment:
-# 1. Create Custom Monitor component
-# 2. Paste this ENTIRE script as component content
-# 3. Set environment variables as needed
-# 4. Deploy - NO launcher needed
+Description of your parameter
 
 .NOTES
-Version: 1.0.0 - Direct Deployment Template
-Author: Datto RMM Performance Optimization
-Deployment: DIRECT (no launcher required)
-Performance: <200ms execution, zero network dependencies
-Compatible: PowerShell 3.0+, Datto RMM Environment
-
-PERFORMANCE OPTIMIZATIONS:
-- Embedded functions eliminate external loading overhead
-- Optimized processing with minimal branching
-- Streamlined diagnostic output for speed
-- No job creation or timeout management overhead
-- Direct execution path with performance monitoring
-
-CUSTOMIZATION POINTS:
-- Update parameters section for your specific needs
-- Modify embedded functions if additional functionality needed
-- Customize diagnostic output for your monitoring requirements
-- Adjust performance thresholds and validation logic
-
-CHANGELOG:
-1.0.0 - Initial direct deployment template
+Self-contained monitor script template
 #>
 
 param(

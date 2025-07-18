@@ -1,42 +1,18 @@
 <#
 .SYNOPSIS
-Software Monitor - Datto RMM Monitor Component (Expert Pattern)
+Software Monitor Template
 
 .DESCRIPTION
-High-performance software detection monitor based on expert Datto RMM patterns.
-Optimized for direct deployment with embedded functions for maximum speed.
+Registry-based software detection monitor for Datto RMM.
 
-Features:
-- Registry-based detection (avoids slow Win32_Product)
-- System and user-level software detection
-- Configurable alert logic (alert if found/not found)
-- Multiple software search support
-- PowerShell 2.0 compatible
-- Sub-200ms execution time target
+.PARAMETER SoftwareSearch
+Software names to search for (space-separated)
 
-.COMPONENT
-Category: Monitor (System Health Check)
-Execution: Every 1-2 minutes (high frequency)
-Timeout: 3 seconds maximum
-Changeable: No (Monitor category is immutable)
-
-.ENVIRONMENT VARIABLES
-- SoftwareSearch (String): Software names to search for (space-separated)
-- SearchMethod (String): "EQ" = alert if found, "NE" = alert if not found (default: NE)
-- IncludeUserLevel (Boolean): Include user-level installations (default: false)
-- CustomSearch (String): Custom search terms (alternative to SoftwareSearch)
-
-.EXAMPLES
-Environment Variables:
-SoftwareSearch = "Chrome Firefox"
-SearchMethod = "NE"
-IncludeUserLevel = false
+.PARAMETER SearchMethod
+"EQ" = alert if found, "NE" = alert if not found
 
 .NOTES
-Version: 1.0.0
-Author: Based on Datto RMM Expert Patterns
-Compatible: PowerShell 2.0+, Datto RMM Monitor
-Performance: Optimized for <200ms execution
+Self-contained software monitor template
 #>
 
 param(
