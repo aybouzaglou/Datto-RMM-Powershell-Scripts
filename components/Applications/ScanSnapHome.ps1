@@ -9,7 +9,7 @@ Installs or updates ScanSnap Home software optimized for Datto RMM Applications 
 - Intelligent installation vs. update detection
 - Comprehensive logging and error handling
 - Timeout protection for all operations
-- Bundled installer file support
+- Datto RMM file attachment support
 
 .COMPONENT
 Category: Applications (Software Deployment)
@@ -173,7 +173,7 @@ try {
         
         # Installation logic would go here
         # This would include:
-        # - Extracting bundled installer files
+        # - Using attached installer files (via Datto RMM file attachment)
         # - Installing prerequisites (Visual C++ redistributables)
         # - Running silent installation
         

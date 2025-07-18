@@ -17,7 +17,8 @@ You can start using the new architecture immediately:
 
 **Option A: Use Enhanced Scripts**
 - `components/Scripts/FocusedDebloat.ps1` - Enhanced debloat script
-- `components/Applications/ScanSnapHome.ps1` - Enhanced ScanSnap installer
+- `components/Applications/ScanSnapHome.ps1` - Enhanced ScanSnap installer (uses file attachment)
+- `components/Applications/TungstenPrintixClient.ps1` - Printix client installer (uses file attachment)
 - `components/Monitors/DiskSpaceMonitor.ps1` - Example monitor script
 
 **Option B: Use Launchers (Applications & Scripts Only)**
@@ -25,6 +26,30 @@ You can start using the new architecture immediately:
 - `launchers/LaunchInstaller.ps1` - Optimized for Applications components
 - `launchers/LaunchScripts.ps1` - Optimized for Scripts components
 - **Note**: Monitors use direct deployment (paste script content directly)
+
+## 📎 File Attachment for Installers
+
+For Applications components that install software, use **Datto RMM's file attachment feature**:
+
+### **Correct Approach**
+1. **Attach Files**: Use file attachment fields beneath the script edit box
+2. **Reference Directly**: Scripts reference files by name (e.g., `"installer.msi"`)
+3. **No Path Required**: Files are automatically available in the working directory
+
+### **Example Script Pattern**
+```powershell
+# Check for attached installer file
+$InstallerFile = "YourSoftware.msi"
+if (Test-Path $InstallerFile) {
+    Write-Output "Found attached installer: $InstallerFile"
+    # Proceed with installation
+} else {
+    Write-Error "Installer not found - ensure file is attached to component"
+    exit 1
+}
+```
+
+**📖 See**: [File Attachment Guide](Datto-RMM-File-Attachment-Guide.md) for complete details
 
 ## Datto RMM Component Configuration
 
@@ -108,6 +133,7 @@ exit $LASTEXITCODE
 2. **Test ScanSnap Installation**:
    - Create a test component using the installation launcher
    - Set `ScriptName = "ScanSnapHome.ps1"`
+   - **Attach installer files** using Datto RMM file attachment feature
    - Test installation detection and process
 
 3. **Test Disk Space Monitor**:

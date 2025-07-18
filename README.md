@@ -69,6 +69,7 @@ exit $LASTEXITCODE
 | 🚀 **Launchers** | Auto-updating deployment | `launchers/` | `UniversalLauncher.ps1` | [Deployment Guide](docs/Deployment-Guide.md) |
 | 📦 **Components** | Production scripts | `components/` | Category-organized scripts | [Component Categories](docs/Datto-RMM-Component-Categories.md) |
 | 📋 **Templates** | Script templates | `templates/` | Ready-to-use templates | [Templates Section](#-templates--examples) |
+| 📎 **File Attachments** | Datto RMM file handling | `docs/` | File attachment guide | [File Attachment Guide](docs/Datto-RMM-File-Attachment-Guide.md) |
 | 🧪 **Tests** | Validation & benchmarks | `tests/` | Performance testing suite | [Testing Section](#-testing--validation) |
 | 📚 **Documentation** | Comprehensive guides | `docs/` | 15+ detailed guides | [Documentation Index](#-documentation-index) |
 
@@ -407,6 +408,7 @@ Every push triggers enterprise-grade validation:
 - **[Production Deployment Checklist](docs/Production-Deployment-Checklist.md)** - Production checklist
 - **[Bluescreen Monitor Guide](docs/BluescreenMonitor-Guide.md)** - Bluescreen monitoring guide
 - **[Developer Workflow](docs/DEVELOPER-WORKFLOW.md)** - Development workflow guide
+- **[File Attachment Guide](docs/Datto-RMM-File-Attachment-Guide.md)** - Official Datto RMM file handling
 
 ### **📚 Traditional Development Guides**
 - **[Quick Reference](traditional-guides/Quick-Reference.md)** - Decision matrix and navigation
@@ -422,7 +424,11 @@ When working with this repository:
 2. **Use `templates/` as starting points** for new script development
 3. **Reference `shared-functions/`** for available reusable functions
 4. **Follow component category guidelines** in [Component Categories](docs/Datto-RMM-Component-Categories.md)
-5. **Test with GitHub Actions** before suggesting deployment
+5. **🚨 CRITICAL: Use Datto RMM file attachment** for installer files - see [File Attachment Guide](docs/Datto-RMM-File-Attachment-Guide.md)
+   - ❌ **Never suggest manual file placement** in temp directories or downloads folders
+   - ✅ **Always use direct file reference** for attached files (e.g., `"installer.msi"`)
+   - ✅ **Reference official Datto RMM documentation** approach for file handling
+6. **Test with GitHub Actions** before suggesting deployment
 
 ### **Development Workflow**
 ```powershell
