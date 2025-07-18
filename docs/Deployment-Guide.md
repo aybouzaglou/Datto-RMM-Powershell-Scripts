@@ -81,13 +81,12 @@ skipwindows = false
 3. Test thoroughly before deployment
 
 ### Environment Variables
-Use environment variables for configuration:
+Use Datto RMM environment variables for script configuration:
 ```powershell
-$Environment = $env:RMM_Environment
-$ConfigPath = switch ($Environment) {
-    "Production" { "C:\Config\Production\" }
-    default      { "C:\Config\Default\" }
-}
+# Example: Using environment variables in your scripts
+$CustomPath = $env:CustomPath
+$EnableDebug = ($env:EnableDebug -eq "true")
+$Threshold = if ($env:Threshold) { [int]$env:Threshold } else { 10 }
 ```
 
 ## Troubleshooting
