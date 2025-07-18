@@ -15,6 +15,9 @@ Datto RMM has three component categories with different characteristics:
 - **Timeout**: <3 seconds
 - **Changeable**: No (immutable)
 - **Exit Codes**: 0=healthy, non-zero=alert
+- **Output Requirements**: Must use `<-Start Result->` and `<-End Result->` markers
+- **Deployment**: Direct deployment only (no launchers for optimal performance)
+- **Design Pattern**: Diagnostic-first with single output stream (Write-Host only)
 
 ## Scripts
 - **Purpose**: General automation and maintenance

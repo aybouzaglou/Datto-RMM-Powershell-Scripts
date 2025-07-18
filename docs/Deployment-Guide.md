@@ -108,9 +108,12 @@ $Threshold = if ($env:Threshold) { [int]$env:Threshold } else { 10 }
 - **Embed all functions** - ensure scripts are self-contained
 - **Start with test devices** for gradual rollout
 - **Monitor logs** for execution issues
+- **Monitors**: Use direct deployment only (no launchers for optimal performance)
+- **Follow diagnostic-first design** - show work before results
 
 ## Related Documentation
 
 - [Function Reference](Function-Reference.md) - Copy/paste function patterns
 - [Component Categories](Datto-RMM-Component-Categories.md) - RMM component types
 - [File Attachment Guide](Datto-RMM-File-Attachment-Guide.md) - Using file attachments
+- [Monitor Development Guidelines](Monitor-Development-Guidelines.md) - Expert monitor patterns
