@@ -33,32 +33,33 @@ Import-Module .\shared-functions\Core\RMMLogging.ps1
 - ✅ **Performance optimized** - No function loading overhead
 - ✅ **Proven patterns** - Use battle-tested code without dependencies
 
-### **🚀 Launchers = Auto-Updating Deployment (Applications & Scripts Only)**
+### **🚀 Direct Deployment = Traditional Script Approach (All Components)**
 
-**Philosophy**: Launchers provide zero-maintenance auto-updating for non-critical components.
+**Philosophy**: All components use direct deployment for maximum reliability and simplicity.
 
-**✅ Use Launchers For:**
-- **Applications** - Software deployment scripts (can tolerate network dependencies)
-- **Scripts** - General automation scripts (flexibility over performance)
+**✅ Direct Deployment Benefits:**
+- **Simplicity** - No complex launcher architecture to maintain
+- **Reliability** - No network dependencies during execution
+- **Performance** - Optimal execution speed for all component types
+- **Visibility** - All code visible in RMM component for troubleshooting
+- **Consistency** - Same deployment method for all component types
 
-**❌ Never Use Launchers For:**
-- **Monitors** - Performance-critical, must be self-contained
+**✅ All Components Use Direct Deployment:**
+- **Applications** - Software deployment scripts with embedded functions
+- **Scripts** - General automation scripts with embedded functions
+- **Monitors** - Performance-critical monitoring with embedded functions
 
-**Why This Distinction:**
-- **Applications/Scripts**: Run occasionally, can handle network delays, benefit from auto-updates
-- **Monitors**: Run every 1-2 minutes, need sub-3-second execution, require 100% reliability
+### **📊 Self-Contained Script Architecture**
 
-### **📊 Monitors = Direct Deployment Only**
+**Philosophy**: All scripts must be completely self-contained for maximum performance and reliability.
 
-**Philosophy**: Monitors must be 100% self-contained for maximum performance and reliability.
-
-**✅ Monitor Requirements:**
-- **Self-contained** - All functions embedded directly in script
+**✅ Self-Contained Script Requirements:**
+- **All functions embedded** - Copy needed functions directly into each script
 - **No external dependencies** - No network calls, no shared function imports
-- **Sub-3-second execution** - Performance is critical
+- **Optimal performance** - No function loading overhead
 - **100% reliability** - Must work in all network conditions
 
-**✅ Monitor Development Pattern:**
+**✅ Self-Contained Development Pattern:**
 ```powershell
 # Copy functions directly from EmbeddedMonitorFunctions.ps1
 function Write-MonitorAlert {
@@ -110,23 +111,23 @@ if ($diskUsage -gt $threshold) {
 ### **🔧 Application/Script Development**
 1. **Start with template**: Create in appropriate `components/` directory
 2. **Copy function patterns**: Copy needed functions from `shared-functions/` into your script
-3. **Use launcher**: `launchers/UniversalLauncher.ps1` for deployment
-4. **Test with launcher**: Ensure auto-update functionality works
-5. **Deploy with launcher**: Use launcher in Datto RMM component
+3. **Embed all functions**: Make script completely self-contained
+4. **Test locally**: Ensure all functionality works without external dependencies
+5. **Deploy directly**: Paste entire script content into Datto RMM component
 
 ## 🚨 **Critical Rules for LLM Assistants**
 
 ### **❌ Never Suggest:**
-- Importing shared functions into monitors
-- Using launchers for monitors
-- Creating runtime dependencies for monitors
+- Importing shared functions into any scripts
+- Using launchers for any components
+- Creating runtime dependencies for any scripts
 - API-based deployment (manual deployment only)
 
 ### **✅ Always Recommend:**
 - Copy/paste functions from shared-functions/ into scripts
-- Direct deployment for monitors
-- Launcher-based deployment for Applications/Scripts
-- Self-contained monitor scripts with embedded functions
+- Direct deployment for all components
+- Self-contained scripts with embedded functions
+- Traditional script approach for maximum reliability
 
 ### **🎯 Decision Matrix:**
 | Component Type | Deployment Method | Function Patterns | Performance Requirement |

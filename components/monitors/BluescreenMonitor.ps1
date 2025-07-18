@@ -70,7 +70,7 @@ function Write-MonitorLog {
     # This is embedded for maximum reliability and performance
 }
 
-# Embedded environment variable function (copied from shared-functions/EmbeddedMonitorFunctions.ps1)
+# Embedded environment variable function
 function Get-RMMVariable {
     param([string]$Name, [string]$Type = "String", $Default = $null)
 

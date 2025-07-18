@@ -21,19 +21,19 @@ This comprehensive guide covers development patterns for **Application and Scrip
 ## 🏗️ Architecture & Deployment
 
 ### **✅ Recommended Deployment Pattern**
-Both Installation and Removal/Modification scripts should use **launcher-based deployment** for:
-- **Automatic updates** from GitHub repository
+Both Installation and Removal/Modification scripts should use **direct deployment** for:
+- **Maximum reliability** with no network dependencies
 - **Flexible configuration** via environment variables
-- **Consistent function patterns** across scripts
-- **Easy maintenance** and version control
+- **Consistent function patterns** with embedded functions
+- **Easy maintenance** and troubleshooting
 
-### **🚀 Launcher Integration**
+### **🚀 Self-Contained Integration**
 ```powershell
-# Scripts are deployed via launchers that:
-# 1. Download latest script from GitHub
-# 2. Cache for offline scenarios
-# 3. Pass environment variables to script
-# 4. Handle error reporting and logging
+# Scripts are deployed with embedded functions:
+# 1. All functions copied directly into script
+# 2. No external dependencies during execution
+# 3. Environment variables processed internally
+# 4. Comprehensive error handling and logging
 ```
 
 ## ✅ Allowed Operations
@@ -366,12 +366,12 @@ $env:ForceRemoval = "true"
 - [ ] **Logging**: Event logging implemented
 - [ ] **Documentation**: Clear parameter documentation
 
-### **Launcher Configuration**
+### **Direct Deployment Configuration**
 - [ ] **Component Type**: Application or Script (as appropriate)
-- [ ] **Launcher**: Use appropriate launcher (UniversalLauncher.ps1)
+- [ ] **Script Content**: Paste entire script with embedded functions
 - [ ] **Environment Variables**: Configure required parameters
-- [ ] **Cache Timeout**: Set appropriate cache timeout (5 minutes recommended)
-- [ ] **Testing**: Test launcher functionality in Datto RMM
+- [ ] **Self-Contained**: Verify all functions are embedded in script
+- [ ] **Testing**: Test script functionality in Datto RMM
 
 ### **Production Deployment**
 - [ ] **Gradual Rollout**: Start with test devices
@@ -410,11 +410,12 @@ $env:ForceRemoval = "true"
 - Verify changes were applied
 
 ### **Universal Guidelines**
-- Always use launcher-based deployment
-- Embed functions from shared-functions/ (copy/paste)
+- Always use direct deployment with embedded functions
+- Copy needed functions from shared-functions/ into each script
 - Handle LocalSystem context limitations
 - Implement proper error handling and logging
 - Test with various input scenarios
+- Ensure scripts are completely self-contained
 
 ---
 

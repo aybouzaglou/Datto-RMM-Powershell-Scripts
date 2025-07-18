@@ -28,9 +28,10 @@ System.String - Progress messages and status information
 
 .EXAMPLE
 # Datto RMM Applications Component Usage:
-# ScriptName: "ScanSnapHome.ps1"
-# Component Type: Applications
-# Timeout: 30 minutes
+# 1. Create Applications component in Datto RMM
+# 2. Paste this ENTIRE script as component content
+# 3. Attach MSI installer file to component
+# 4. Deploy - NO launcher needed
 
 .NOTES
 Version: 2.0.0
@@ -94,13 +95,13 @@ Write-RMMLog "=============================================="
 Write-RMMLog "Component Category: Applications (Software Deployment)" -Level Config
 Write-RMMLog "Start Time: $(Get-Date)" -Level Config
 Write-RMMLog "Log Directory: $LogPath" -Level Config
-Write-RMMLog "Shared Functions: $($Global:RMMFunctionsLoaded)" -Level Config
+Write-RMMLog "Functions: Embedded (self-contained)" -Level Config
 Write-RMMLog ""
 
-# Pre-execution cleanup using shared functions if available
+# Pre-execution cleanup using embedded functions
 Write-RMMLog "Performing pre-execution cleanup..." -Level Status
 
-# Embedded cleanup functions (patterns from shared-functions/Utilities/)
+# Embedded cleanup functions
 $ProcessesToKill = @("WinSSHOfflineInstaller*", "SSHomeDownloadInstaller*", "WinSSHomeInstaller*", "SSUpdate")
 foreach ($ProcessName in $ProcessesToKill) {
     Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -127,7 +128,7 @@ function Test-ScanSnapHomeInstalled {
     
     Write-RMMLog "Checking for existing ScanSnap Home installation..." -Level Status
     
-    # Embedded software detection (pattern from shared-functions/Core/RMMSoftwareDetection.ps1)
+    # Embedded software detection
     
     # Fallback to manual registry detection
     $RegPaths = @(
@@ -189,12 +190,8 @@ try {
     Write-RMMLog "Exit Code: $exitCode" -Level Config
     Write-RMMLog "Component Category: Applications" -Level Config
     
-    # Stop transcript using shared function if available
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Stop-RMMTranscript -ErrorAction SilentlyContinue)) {
-        Stop-RMMTranscript
-    } else {
-        Stop-Transcript
-    }
+    # Stop transcript
+    Stop-Transcript
     
     exit $exitCode
     
@@ -202,12 +199,8 @@ try {
     Write-RMMLog "ScanSnap Home Applications component failed: $($_.Exception.Message)" -Level Failed
     Write-RMMLog "Line: $($_.InvocationInfo.ScriptLineNumber)" -Level Failed
     
-    # Stop transcript using shared function if available
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Stop-RMMTranscript -ErrorAction SilentlyContinue)) {
-        Stop-RMMTranscript
-    } else {
-        Stop-Transcript
-    }
+    # Stop transcript
+    Stop-Transcript
     
     exit 2
 }

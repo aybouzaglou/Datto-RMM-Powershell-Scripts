@@ -6,7 +6,6 @@ on:
     paths:
       - 'components/**/*.ps1'
       - 'shared-functions/**/*.ps1'
-      - 'launchers/**/*.ps1'
       - '.github/workflows/**'
       - 'scripts/**/*.ps1'
   pull_request:
@@ -14,7 +13,6 @@ on:
     paths:
       - 'components/**/*.ps1'
       - 'shared-functions/**/*.ps1'
-      - 'launchers/**/*.ps1'
       - '.github/workflows/**'
       - 'scripts/**/*.ps1'
   workflow_dispatch:
@@ -448,7 +446,6 @@ jobs:
             $hasDiagnosticMarkers = ($content -match '<-Start Diagnostic->' -and $content -match '<-End Diagnostic->')
             $hasEmbeddedFunctions = ($content -match 'function Get-RMMVariable' -and $content -match 'function Write-MonitorAlert')
             $hasExternalDependencies = ($content -match 'Invoke-WebRequest|Invoke-RestMethod|dot-sourcing|\. \$')
-            $hasLauncherPattern = ($content -match 'LaunchMonitor|GitHub.*download')
             $hasPerformanceTiming = ($content -match 'Stopwatch|ElapsedMilliseconds')
 
             # Required architecture checks
@@ -465,26 +462,21 @@ jobs:
               Write-Output "  ⚠️  Missing diagnostic markers (recommended for production)"
             }
 
-            # Direct deployment specific checks
+            # Self-contained deployment checks
             if ($hasEmbeddedFunctions) {
-              Write-Output "  ✅ Embedded functions detected (direct deployment pattern)"
+              Write-Output "  ✅ Embedded functions detected (self-contained pattern)"
             } else {
-              Write-Output "  ⚠️  Missing embedded functions (may indicate launcher dependency)"
+              Write-Output "  ⚠️  Missing embedded functions (consider adding for self-containment)"
             }
 
             if ($hasExternalDependencies) {
-              Write-Output "  ❌ External dependencies detected (violates direct deployment)"
+              Write-Output "  ❌ External dependencies detected (violates self-contained approach)"
               $architectureIssues++
             } else {
-              Write-Output "  ✅ Zero external dependencies (direct deployment compliant)"
+              Write-Output "  ✅ Zero external dependencies (self-contained compliant)"
             }
 
-            if ($hasLauncherPattern) {
-              Write-Output "  ❌ Launcher pattern detected (monitors should use direct deployment)"
-              $architectureIssues++
-            } else {
-              Write-Output "  ✅ No launcher patterns (direct deployment compliant)"
-            }
+
 
             if ($hasPerformanceTiming) {
               Write-Output "  ✅ Performance timing implemented"
@@ -725,33 +717,7 @@ jobs:
           Write-Output "✅ No performance issues detected"
         }
         
-    - name: 🚀 Test Launchers
-      shell: pwsh
-      run: |
-        Write-Output "=== Testing Launchers ==="
-        
-        $launchers = Get-ChildItem -Path "launchers" -Filter "*.ps1" -ErrorAction SilentlyContinue
-        
-        foreach ($launcher in $launchers) {
-          Write-Output "Testing launcher: $($launcher.Name)"
-          
-          # Test syntax
-          try {
-            $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $launcher.FullName -Raw), [ref]$null)
-            Write-Output "  ✅ Syntax valid"
-          } catch {
-            Write-Output "  ❌ Syntax error: $($_.Exception.Message)"
-            exit 1
-          }
-          
-          # Check for required parameters
-          $content = Get-Content $launcher.FullName -Raw
-          if ($content -match 'param\s*\(') {
-            Write-Output "  ✅ Has parameter block"
-          } else {
-            Write-Output "  ⚠️  No parameter block found"
-          }
-        }
+
         
     - name: 📊 Generate Comprehensive Validation Report
       shell: pwsh
@@ -775,7 +741,6 @@ jobs:
 
         $componentScripts = (Get-ChildItem -Path "components" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue).Count
         $sharedFunctions = (Get-ChildItem -Path "shared-functions" -Filter "*.ps1" -ErrorAction SilentlyContinue).Count
-        $launchers = (Get-ChildItem -Path "launchers" -Filter "*.ps1" -ErrorAction SilentlyContinue).Count
         $monitors = (Get-ChildItem -Path "components/Monitors" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue).Count
         $applications = (Get-ChildItem -Path "components/Applications" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue).Count
         $scripts = (Get-ChildItem -Path "components/Scripts" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue).Count
@@ -792,7 +757,6 @@ jobs:
         Write-Output "    📱 Applications: $applications"
         Write-Output "    ⚙️  Scripts: $scripts"
         Write-Output "  🔧 Reference Function Patterns: $sharedFunctions"
-        Write-Output "  🚀 Launchers: $launchers"
         Write-Output ""
         Write-Output "✅ Validation Checks Completed:"
         Write-Output "  ✅ PowerShell Syntax Validation"
@@ -801,8 +765,7 @@ jobs:
         Write-Output "  ✅ Performance Analysis"
         Write-Output "  ✅ Shared Functions Reference Library Validation"
         Write-Output "  ✅ Component Category Validation"
-        Write-Output "  ✅ Direct Deployment Monitor Architecture Validation"
-        Write-Output "  ✅ Launcher Parameter Validation"
+        Write-Output "  ✅ Self-Contained Script Architecture Validation"
         Write-Output ""
         Write-Output "🏆 === QUALITY ASSESSMENT === 🏆"
         Write-Output ""
@@ -810,7 +773,7 @@ jobs:
         Write-Output "  🔍 Advanced static analysis (PSScriptAnalyzer)"
         Write-Output "  🧠 Semantic validation for Datto RMM compatibility"
         Write-Output "  ⚡ Performance analysis for monitor compliance"
-        Write-Output "  🏗️  Architecture validation for copy/paste functions & hard-coded launchers"
+        Write-Output "  🏗️  Architecture validation for self-contained scripts & copy/paste functions"
         Write-Output "  ⚡ Smart optimization - tests only changed files (feature branches)"
         Write-Output ""
         Write-Output "This validation pipeline now RIVALS VSCode's PowerShell extension!"
@@ -832,9 +795,6 @@ jobs:
         }
         if (Test-Path "shared-functions") {
           Copy-Item -Path "shared-functions" -Destination "deployment-ready/" -Recurse -Force
-        }
-        if (Test-Path "launchers") {
-          Copy-Item -Path "launchers" -Destination "deployment-ready/" -Recurse -Force
         }
         
         # Create deployment guide
@@ -860,16 +820,15 @@ jobs:
 
         ### Architecture Validation
         - ✅ Component Categories: PASSED
-        - ✅ Direct Deployment Monitor Architecture: PASSED
+        - ✅ Self-Contained Script Architecture: PASSED
         - ✅ Reference Function Patterns: PASSED
-        - ✅ Launchers: PASSED
 
         ## 🏆 QUALITY ASSURANCE
 
         These scripts have been validated with an **enterprise-grade pipeline** that:
         - **Rivals VSCode's PowerShell extension** for static analysis
         - **Exceeds industry standards** for Datto RMM compatibility
-        - **Validates your custom architecture** (copy/paste functions, hard-coded launchers)
+        - **Validates your custom architecture** (self-contained scripts, copy/paste functions)
         - **Ensures deployment readiness** with comprehensive checks
         
         ## 📁 Ready for Manual Deployment
@@ -880,8 +839,7 @@ jobs:
         ### Shared Functions (copy/paste reference patterns):
         $(if (Test-Path "shared-functions") { (Get-ChildItem -Path "shared-functions" -Filter "*.ps1" -Recurse | ForEach-Object { "- $($_.Name) (copy/paste pattern)" }) -join "`n" } else { "- No shared function patterns found" })
         
-        ### Launchers (universal deployment):
-        $(if (Test-Path "launchers") { (Get-ChildItem -Path "launchers" -Filter "*.ps1" -Recurse | ForEach-Object { "- $($_.Name)" }) -join "`n" } else { "- No launchers found" })
+
         
         ## 🎯 DEPLOYMENT INSTRUCTIONS
 
@@ -890,7 +848,7 @@ jobs:
         ✅ **Best practices validated** - PSScriptAnalyzer approved
         ✅ **Datto RMM optimized** - No banned operations or interactive elements
         ✅ **Performance validated** - Monitor scripts optimized for 3-second limit
-        ✅ **Architecture tested** - Reference functions and launchers verified
+        ✅ **Architecture tested** - Self-contained scripts and reference functions verified
 
         ### Manual Deployment Steps
 
@@ -960,7 +918,7 @@ jobs:
         - ✅ **PSScriptAnalyzer**: PASSED (no critical errors)
         - ✅ **Semantic Validation**: PASSED (Datto RMM compatible)
         - ✅ **Performance Analysis**: PASSED (monitor compliance)
-        - ✅ **Architecture Validation**: PASSED (reference functions, launchers)
+        - ✅ **Architecture Validation**: PASSED (self-contained scripts, reference functions)
 
         ### 📋 Changes Made
         <!-- Auto-generated from validated changes -->

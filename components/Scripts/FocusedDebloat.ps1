@@ -32,9 +32,10 @@ C:\ProgramData\Debloat\Debloat.log
 
 .EXAMPLE
 # Datto RMM Scripts Component Usage:
-# ScriptName: "FocusedDebloat.ps1"
-# Component Type: Scripts
-# Environment Variables: customwhitelist, skipwindows, skiphp, skipdell, skiplenovo
+# 1. Create Scripts component in Datto RMM
+# 2. Paste this ENTIRE script as component content
+# 3. Set environment variables: customwhitelist, skipwindows, skiphp, skipdell, skiplenovo
+# 4. Deploy - NO launcher needed
 
 .NOTES
 Version: 2.0.0
@@ -149,7 +150,7 @@ if ($customwhitelistEnv) {
     Write-RMMLog "Using Datto RMM customwhitelist: $($customwhitelist -join ', ')" -Level Config
 }
 
-# Process skip flags with validation using shared functions
+# Process skip flags with validation using embedded functions
 $skipWindows = Get-RMMVariable -Name "skipwindows" -Type "Boolean" -Default $false
 $skipHP = Get-RMMVariable -Name "skiphp" -Type "Boolean" -Default $false
 $skipDell = Get-RMMVariable -Name "skipdell" -Type "Boolean" -Default $false

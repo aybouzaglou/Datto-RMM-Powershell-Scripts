@@ -69,7 +69,7 @@ function Write-MonitorLog {
     # This is embedded for maximum reliability and performance
 }
 
-# Embedded environment variable function (copied from shared-functions/EmbeddedMonitorFunctions.ps1)
+# Embedded environment variable function
 function Get-RMMVariable {
     param([string]$Name, [string]$Type = "String", $Default = $null)
 
@@ -166,7 +166,7 @@ try {
     # Add threshold information to message
     $message += " [Thresholds: Warning<${WarningThreshold}%, Critical<${CriticalThreshold}%]"
     
-    # Embedded monitor result function (copied from shared-functions/EmbeddedMonitorFunctions.ps1)
+    # Embedded monitor result function
     Write-Host "<-Start Result->"
     Write-Host "${status}: $message"
     Write-Host "<-End Result->"

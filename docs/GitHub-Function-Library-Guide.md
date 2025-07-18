@@ -1,47 +1,47 @@
-# GitHub-Based Function Library for Datto RMM - Hybrid Deployment Strategy
+# GitHub-Based Function Library for Datto RMM - Traditional Script Approach
 
 ## Overview
 
-This repository implements a **hybrid deployment architecture** that optimizes both performance and functionality:
+This repository implements a **traditional script deployment architecture** that optimizes for reliability and simplicity:
 
-- **📊 Monitors**: Direct deployment with embedded functions for maximum performance (98.2% faster)
-- **🔧 Applications & Scripts**: GitHub-based function library for flexibility and automatic updates
+- **📊 All Components**: Direct deployment with embedded functions for maximum reliability
+- **🔧 Consistent Approach**: Same deployment method for Applications, Scripts, and Monitors
+- **📚 Reference Library**: Shared functions serve as copy/paste patterns for consistency
 
-This sophisticated approach provides the best of both worlds: **blazing-fast monitors** and **flexible, maintainable Applications/Scripts**.
+This approach provides **maximum reliability**, **simple deployment**, and **easy troubleshooting** across all component types.
 
-## 🎯 Deployment Strategy Decision Matrix
+## 🎯 Deployment Strategy
 
 ### **✅ Use Direct Deployment (Embedded Functions) For:**
 - **📊 Monitors**: All monitor components for maximum performance
-- **High-frequency execution**: Scripts running every 1-2 minutes
-- **Critical system monitoring**: Where reliability is paramount
-- **Performance-sensitive operations**: Where <200ms execution is required
+- **🔧 Applications**: Software deployment and installation scripts
+- **📝 Scripts**: General automation and maintenance scripts
+- **All Components**: Consistent approach across all component types
 
-### **🔄 Use GitHub Function Library (Launcher-Based) For:**
-- **🔧 Applications**: Software deployment and installation
-- **📝 Scripts**: General automation and maintenance
-- **Complex operations**: Multi-step processes with extended timeouts
-- **Frequently updated logic**: Scripts requiring regular improvements
+### **📚 Function Reference Library:**
+- **Copy/Paste Patterns**: Use shared-functions/ as reference for common patterns
+- **Self-Contained Scripts**: Each script contains all needed functions
+- **No Runtime Dependencies**: Scripts work independently without external calls
 
 ## Architecture Benefits
 
 ### **Development Workflow**
-- **Version Control**: Full Git history for all scripts and functions
+- **Version Control**: Full Git history for all scripts and function patterns
 - **Collaboration**: Multiple team members can contribute via pull requests
 - **Testing**: Use branches for testing new features before production
 - **Documentation**: README files and inline documentation in the repo
 
 ### **Deployment Advantages**
-- **Zero RMM Updates**: Scripts auto-update without touching RMM components
-- **Instant Rollbacks**: Switch to previous Git tag if issues arise
-- **Consistent Environment**: Same functions across all scripts
-- **Centralized Management**: Update shared functions once, affects all scripts
+- **Maximum Reliability**: No network dependencies during script execution
+- **Simple Deployment**: Copy and paste script content directly into RMM
+- **Consistent Patterns**: Same function patterns across all scripts
+- **Easy Troubleshooting**: All code visible in RMM component
 
 ### **Operational Benefits**
-- **Reduced Maintenance**: Update functions in one place
-- **Better Debugging**: Full execution logs and version tracking
-- **Scalability**: Easy to add new functions and scripts
-- **Compliance**: Full audit trail via Git history
+- **Zero Network Dependencies**: Scripts work in all network conditions
+- **Better Performance**: No download overhead during execution
+- **Simplified Architecture**: No complex launcher system to maintain
+- **Full Visibility**: All script logic visible in Datto RMM component
 
 ## Repository Structure
 
@@ -119,42 +119,54 @@ Registry operations and software detection:
 - `Get-RMMUninstallInfo` - Fast software detection via registry
 - `Backup-RMMRegistryKey` - Registry backup functionality
 
-## Launcher Architecture
+## Function Reference Architecture
 
-### **Universal Launcher Pattern**
-The launcher system provides automatic script downloading and function loading:
+### **Copy/Paste Pattern**
+The function library provides reference patterns for embedding in scripts:
 
 ```powershell
-# Basic usage in Datto RMM component
-.\UniversalLauncher.ps1 -ScriptName "MyScript.ps1" -ScriptType "installations"
+# Copy functions directly into your script
+function Write-RMMLog {
+    param([string]$Message, [string]$Level = 'Info')
+    $prefix = switch ($Level) {
+        'Success' { 'SUCCESS ' }
+        'Failed'  { 'FAILED  ' }
+        'Warning' { 'WARNING ' }
+        default   { 'INFO    ' }
+    }
+    Write-Output "$prefix$Message"
+}
+
+# Use embedded function in your script
+Write-RMMLog "Script starting..." -Level Status
 ```
 
-### **Specialized Launchers**
+### **Self-Contained Scripts**
 
-#### **LaunchInstaller.ps1**
-- Extended timeout support (up to 30 minutes)
-- Pre-installation system checks
-- Reboot handling (exit codes 3010/1641)
-- Post-installation verification
+#### **All Component Types**
+- All functions embedded directly in each script
+- No external dependencies during execution
+- Maximum reliability in all network conditions
+- Easy troubleshooting with all code visible
 
-#### **⚠️ DEPRECATED: LaunchMonitor.ps1**
-- **No longer recommended** - Use direct deployment for monitors instead
-- Direct deployment provides better performance and reliability
-- Modern monitors embed all needed functions directly
+#### **Function Embedding Process**
+1. Identify needed functions from shared-functions/
+2. Copy function code into your script
+3. Test script locally to ensure all functions work
+4. Deploy script directly to Datto RMM component
 
-#### **LaunchMaintenance.ps1**
-- Extended timeout for long-running operations
-- System state validation before/after
-- Optional system restore point creation
-- Detailed audit logging
+## Function Integration Process
 
-## Function Loading Process
-
-### **Automatic Loading**
+### **Manual Integration**
 ```powershell
-# Functions are automatically loaded by launchers
-# Or manually load in standalone scripts:
-. .\shared-functions\SharedFunctions.ps1
+# Copy needed functions from shared-functions/ into your script
+# Example: Copy Write-RMMLog function
+function Write-RMMLog {
+    # Function implementation here
+}
+
+# Use the function in your script logic
+Write-RMMLog "Starting operation..." -Level Status
 ```
 
 ### **Caching System**
