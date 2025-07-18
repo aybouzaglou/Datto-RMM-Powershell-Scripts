@@ -10,6 +10,7 @@ Self-contained PowerShell scripts for Datto RMM with embedded functions.
 | Create scripts | `templates/` | [Templates](#templates) |
 | Copy functions | `shared-functions/` | [Function Reference](docs/Function-Reference.md) |
 | Deploy | Direct paste to RMM | [Deployment Guide](docs/Deployment-Guide.md) |
+| Download files | Modern patterns | [Download Best Practices](docs/Datto-RMM-Download-Best-Practices.md) |
 
 ## Architecture
 

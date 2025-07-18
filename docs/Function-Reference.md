@@ -239,6 +239,8 @@ $systemInfo = Get-RMMManufacturer -IncludeModel
 
 Downloads files with timeout protection and verification.
 
+**⚠️ Note**: Consider using modern `Invoke-WebRequest` approach for new scripts. See [Download Best Practices](Datto-RMM-Download-Best-Practices.md).
+
 **Syntax:**
 
 ```powershell
@@ -260,6 +262,24 @@ Invoke-RMMDownload -Url <String> -OutputPath <String> [-TimeoutSec <Int>] [-User
 Invoke-RMMDownload -Url "https://example.com/installer.exe" -OutputPath "$env:TEMP\installer.exe"
 Invoke-RMMDownload -Url "https://example.com/file.zip" -OutputPath "C:\Temp\file.zip" -TimeoutSec 600 -VerifySize 1000000
 ```
+
+#### Modern Download Pattern
+
+**Recommended approach for new scripts:**
+
+```powershell
+# Set TLS 1.2 and download with validation
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing -TimeoutSec 300
+
+# Verify integrity if hash available
+if ($expectedHash) {
+    $actualHash = (Get-FileHash $outFile -Algorithm SHA256).Hash
+    if ($actualHash -ne $expectedHash) { throw "Hash mismatch" }
+}
+```
+
+**📖 Details**: [Download Best Practices](Datto-RMM-Download-Best-Practices.md)
 
 #### Test-RMMUrl
 
