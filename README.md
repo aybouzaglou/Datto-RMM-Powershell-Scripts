@@ -188,18 +188,12 @@ docs/
 └── Technician-Deployment-Guide.md       # Technician deployment guide
 ```
 
-### 🔄 **Legacy & Traditional**
+### 🔄 **Legacy Scripts**
 ```
 legacy/                        # Legacy scripts (superseded by new architecture)
 ├── DattoRMM-FocusedDebloat-Launcher.ps1  # Original launcher
 ├── FocusedDebloat.ps1                    # Original debloat script
 └── Scansnap.ps1                          # Original scanner script
-
-traditional-guides/            # Traditional development guides
-├── Quick-Reference.md                     # Decision matrix and navigation
-├── Installation-Scripts-Guide.md         # Software deployment guide
-├── Monitor-Scripts-Guide.md              # Performance-critical monitoring
-└── Removal-Modification-Scripts-Guide.md # Safe removal practices
 ```
 
 ### 🔧 **Development Tools** (`scripts/`)
@@ -390,32 +384,40 @@ Every push triggers enterprise-grade validation:
 | Task | Primary Documentation | Secondary Resources |
 |------|----------------------|-------------------|
 | **🏗️ Understanding Architecture** | **[Architecture Philosophy](docs/Architecture-Philosophy.md)** | [GitHub Launcher Guide](docs/GitHub-Function-Library-Guide.md) |
-| **Creating New Scripts** | [Templates](#-templates--examples) | [Function Reference](docs/Function-Reference.md) |
-| **Deployment Strategies** | [Deployment Guide](docs/Deployment-Guide.md) | [Component Categories](docs/Datto-RMM-Component-Categories.md) |
-| **Performance Optimization** | [Monitor Performance Guide](docs/Monitor-Performance-Optimization-Guide.md) | [Direct Deployment Guide](docs/Direct-Deployment-Guide.md) |
-| **Technician Support** | [Tech Quick Reference](docs/Tech-Quick-Reference-Card.md) | [Technician Deployment Guide](docs/Technician-Deployment-Guide.md) |
+| **🎯 Quick Decision Making** | **[Quick Reference & Decision Matrix](docs/Quick-Reference-Decision-Matrix.md)** | [Component Categories](docs/Datto-RMM-Component-Categories.md) |
+| **📊 Creating Monitors** | **[Monitor Development Guide](docs/Monitor-Performance-Optimization-Guide.md)** | [Direct Deployment Guide](docs/Direct-Deployment-Guide.md) |
+| **🔧 Creating Scripts/Applications** | **[Script Development Guide](docs/Script-Development-Guide.md)** | [Function Reference](docs/Function-Reference.md) |
+| **🌐 Universal Requirements** | **[Universal Requirements Reference](docs/Universal-Requirements-Reference.md)** | [Error Handling Best Practices](docs/Error-Handling-Best-Practices.md) |
+| **🚀 Deployment Strategies** | [Deployment Guide](docs/Deployment-Guide.md) | [Technician Deployment Guide](docs/Technician-Deployment-Guide.md) |
 
 ### **📋 Complete Documentation List**
+
+#### **🎯 Core Development Guides**
 - **[🏗️ Architecture Philosophy](docs/Architecture-Philosophy.md)** - **ESSENTIAL** - Core design principles and constraints
+- **[🎯 Quick Reference & Decision Matrix](docs/Quick-Reference-Decision-Matrix.md)** - **NEW** - Component selection and operation compatibility
+- **[📊 Monitor Development Guide](docs/Monitor-Performance-Optimization-Guide.md)** - **ENHANCED** - Complete monitor development with examples
+- **[🔧 Script Development Guide](docs/Script-Development-Guide.md)** - **NEW** - Applications and Scripts development patterns
+- **[🌐 Universal Requirements Reference](docs/Universal-Requirements-Reference.md)** - **NEW** - Requirements for all script types
+
+#### **🚀 Architecture & Deployment**
 - **[GitHub Launcher Guide](docs/GitHub-Function-Library-Guide.md)** - Complete launcher architecture overview
 - **[Function Reference](docs/Function-Reference.md)** - Detailed function patterns (50+ copy/paste examples)
 - **[Deployment Guide](docs/Deployment-Guide.md)** - 15-minute setup walkthrough
 - **[Component Categories](docs/Datto-RMM-Component-Categories.md)** - Detailed category guide
 - **[Direct Deployment Guide](docs/Direct-Deployment-Guide.md)** - Direct deployment strategy
-- **[Monitor Performance Guide](docs/Monitor-Performance-Optimization-Guide.md)** - Monitor optimization
+- **[Hard-Coded Launcher Guide](docs/Hard-Coded-Launcher-Guide.md)** - Hard-coded launcher system
+
+#### **👥 Technician Resources**
 - **[Tech Quick Reference](docs/Tech-Quick-Reference-Card.md)** - Technician quick reference
 - **[Technician Deployment Guide](docs/Technician-Deployment-Guide.md)** - Technician deployment guide
 - **[Production Deployment Checklist](docs/Production-Deployment-Checklist.md)** - Production checklist
+
+#### **📚 Specialized Guides**
 - **[Bluescreen Monitor Guide](docs/BluescreenMonitor-Guide.md)** - Bluescreen monitoring guide
 - **[Developer Workflow](docs/DEVELOPER-WORKFLOW.md)** - Development workflow guide
 - **[File Attachment Guide](docs/Datto-RMM-File-Attachment-Guide.md)** - Official Datto RMM file handling
 - **[Error Handling Best Practices](docs/Error-Handling-Best-Practices.md)** - Robust error handling patterns
-
-### **📚 Traditional Development Guides**
-- **[Quick Reference](traditional-guides/Quick-Reference.md)** - Decision matrix and navigation
-- **[Installation Scripts Guide](traditional-guides/Installation-Scripts-Guide.md)** - Software deployment
-- **[Monitor Scripts Guide](traditional-guides/Monitor-Scripts-Guide.md)** - Performance-critical monitoring
-- **[Removal/Modification Scripts Guide](traditional-guides/Removal-Modification-Scripts-Guide.md)** - Safe removal practices
+- **[Testing Guide](docs/Datto-RMM-Testing-Guide.md)** - Comprehensive testing strategies
 
 ## � Development & Contribution
 
@@ -559,12 +561,9 @@ exit $LASTEXITCODE
 - **[Component Categories](docs/Datto-RMM-Component-Categories.md)** - Category selection guide
 - **[GitHub Launcher Guide](docs/GitHub-Function-Library-Guide.md)** - Architecture overview
 
-### Traditional Script Development
-- **[Traditional Guides](traditional-guides/)** - Complete collection of development guides
-- **[Quick Reference](traditional-guides/Quick-Reference.md)** - Decision matrix and immediate guidance
-- **[Installation Scripts Guide](traditional-guides/Installation-Scripts-Guide.md)** - Software deployment
-- **[Monitor Scripts Guide](traditional-guides/Monitor-Scripts-Guide.md)** - Performance-critical monitoring
-- **[Removal/Modification Scripts Guide](traditional-guides/Removal-Modification-Scripts-Guide.md)** - Safe removal practices
+### Legacy Resources
+- **[Legacy Scripts](legacy/)** - Original scripts superseded by new architecture
+- **[Repository History](REPOSITORY-CLEANUP-ANALYSIS.md)** - Documentation of architectural evolution
 
 ## 📄 License
 
@@ -609,14 +608,17 @@ This project is provided as-is for educational and operational use with Datto RM
 ## 🚀 Quick Navigation
 
 ### **🎯 For New Users**
-- **Start here**: [Deployment Guide](docs/Deployment-Guide.md) - 15-minute setup walkthrough
-- **Understand categories**: [Component Categories](docs/Datto-RMM-Component-Categories.md) - Choose the right category
+- **Start here**: [Quick Reference & Decision Matrix](docs/Quick-Reference-Decision-Matrix.md) - Choose the right approach
+- **Understand architecture**: [Architecture Philosophy](docs/Architecture-Philosophy.md) - Core design principles
+- **Setup walkthrough**: [Deployment Guide](docs/Deployment-Guide.md) - 15-minute setup guide
 - **See examples**: [Available Scripts](#-available-production-scripts) - Production-ready scripts
 
 ### **🔧 For Developers**
-- **Architecture overview**: [GitHub Launcher Guide](docs/GitHub-Function-Library-Guide.md)
+- **Quick decisions**: [Quick Reference & Decision Matrix](docs/Quick-Reference-Decision-Matrix.md) - Component selection guide
+- **Monitor development**: [Monitor Development Guide](docs/Monitor-Performance-Optimization-Guide.md) - Complete monitor guide
+- **Script development**: [Script Development Guide](docs/Script-Development-Guide.md) - Applications & Scripts guide
+- **Universal requirements**: [Universal Requirements Reference](docs/Universal-Requirements-Reference.md) - Requirements for all scripts
 - **Function patterns**: [Function Reference](docs/Function-Reference.md) - 50+ copy/paste patterns
-- **Templates**: [Templates Section](#-templates--examples) - Starting points for new scripts
 
 ### **👨‍💻 For Technicians**
 - **Quick reference**: [Tech Quick Reference](docs/Tech-Quick-Reference-Card.md) - Copy/paste deployment guide

@@ -53,7 +53,7 @@ $ScriptName = "BluescreenMonitor.ps1"
 #### Environment Variables:
 ```
 GitHubRepo = aybouzaglou/Datto-RMM-Powershell-Scripts
-ScriptPath = components/monitors/BluescreenMonitor.ps1
+ScriptPath = components/Monitors/BluescreenMonitor.ps1
 DaysToCheck = 7
 IncludeDetails = true
 ```
@@ -177,7 +177,7 @@ OK: No blue screens detected in the past 7 days
 ## 📚 Related Documentation
 
 - [Datto RMM Component Categories](Datto-RMM-Component-Categories.md)
-- [Monitor Scripts Guide](../traditional-guides/Monitor-Scripts-Guide.md)
+- [Monitor Development Guide](Monitor-Performance-Optimization-Guide.md)
 - [GitHub Function Library Guide](GitHub-Function-Library-Guide.md)
 
 ## 🎯 Quick Reference
