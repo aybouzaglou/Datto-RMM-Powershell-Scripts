@@ -409,6 +409,7 @@ Every push triggers enterprise-grade validation:
 - **[Bluescreen Monitor Guide](docs/BluescreenMonitor-Guide.md)** - Bluescreen monitoring guide
 - **[Developer Workflow](docs/DEVELOPER-WORKFLOW.md)** - Development workflow guide
 - **[File Attachment Guide](docs/Datto-RMM-File-Attachment-Guide.md)** - Official Datto RMM file handling
+- **[Error Handling Best Practices](docs/Error-Handling-Best-Practices.md)** - Robust error handling patterns
 
 ### **📚 Traditional Development Guides**
 - **[Quick Reference](traditional-guides/Quick-Reference.md)** - Decision matrix and navigation
@@ -428,7 +429,12 @@ When working with this repository:
    - ❌ **Never suggest manual file placement** in temp directories or downloads folders
    - ✅ **Always use direct file reference** for attached files (e.g., `"installer.msi"`)
    - ✅ **Reference official Datto RMM documentation** approach for file handling
-6. **Test with GitHub Actions** before suggesting deployment
+6. **🚨 CRITICAL: Use robust error handling** - see [Error Handling Best Practices](docs/Error-Handling-Best-Practices.md)
+   - ❌ **Never let non-critical errors terminate scripts** (logging failures, cleanup issues)
+   - ✅ **Always wrap entire script in try-catch** (not just parts)
+   - ✅ **Handle empty strings in logging functions** with `[AllowEmptyString()]`
+   - ✅ **Continue execution when safe** (only terminate on critical errors)
+7. **Test with GitHub Actions** before suggesting deployment
 
 ### **Development Workflow**
 ```powershell

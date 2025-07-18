@@ -51,23 +51,34 @@ CHANGELOG:
 function Write-RMMLog {
     param(
         [Parameter(Mandatory=$true)]
+        [AllowEmptyString()]
         [string]$Message,
-        
+
         [ValidateSet("Info", "Status", "Success", "Warning", "Error", "Config", "Detect")]
         [string]$Level = "Info"
     )
     
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $logMessage = "[$timestamp] [$Level] $Message"
+
+    # Handle empty messages for spacing
+    if ([string]::IsNullOrEmpty($Message)) {
+        $logMessage = ""
+    } else {
+        $logMessage = "[$timestamp] [$Level] $Message"
+    }
     
-    switch ($Level) {
-        "Success" { Write-Host $logMessage -ForegroundColor Green }
-        "Warning" { Write-Host $logMessage -ForegroundColor Yellow }
-        "Error" { Write-Host $logMessage -ForegroundColor Red }
-        "Status" { Write-Host $logMessage -ForegroundColor Cyan }
-        "Config" { Write-Host $logMessage -ForegroundColor Magenta }
-        "Detect" { Write-Host $logMessage -ForegroundColor Blue }
-        default { Write-Host $logMessage }
+    if ([string]::IsNullOrEmpty($logMessage)) {
+        Write-Host ""  # Empty line for spacing
+    } else {
+        switch ($Level) {
+            "Success" { Write-Host $logMessage -ForegroundColor Green }
+            "Warning" { Write-Host $logMessage -ForegroundColor Yellow }
+            "Error" { Write-Host $logMessage -ForegroundColor Red }
+            "Status" { Write-Host $logMessage -ForegroundColor Cyan }
+            "Config" { Write-Host $logMessage -ForegroundColor Magenta }
+            "Detect" { Write-Host $logMessage -ForegroundColor Blue }
+            default { Write-Host $logMessage }
+        }
     }
 }
 

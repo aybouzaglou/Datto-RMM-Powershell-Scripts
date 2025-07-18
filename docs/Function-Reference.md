@@ -16,7 +16,7 @@ Write-RMMLog -Message <String> -Level <String> [-UpdateCounters <Boolean>]
 
 **Parameters:**
 
-- `Message` (String, Required): The message to log
+- `Message` (String, Required): The message to log (empty strings allowed for spacing)
 - `Level` (String, Required): Log level - Success, Failed, Warning, Status, Config, Detect, Metric, Info
 - `UpdateCounters` (Boolean, Optional): Whether to update global counters (default: true)
 
@@ -26,7 +26,13 @@ Write-RMMLog -Message <String> -Level <String> [-UpdateCounters <Boolean>]
 Write-RMMLog "Software installation completed" -Level Success
 Write-RMMLog "Failed to download installer" -Level Failed
 Write-RMMLog "HP manufacturer detected" -Level Detect
+Write-RMMLog ""  # Empty line for spacing - now handled gracefully
 ```
+
+**Error Handling:**
+- ✅ Handles empty strings gracefully (creates blank lines for spacing)
+- ✅ Non-critical function - will not terminate script on failure
+- ✅ Safe to use in global try-catch blocks
 
 #### Start-RMMTranscript
 
@@ -421,6 +427,46 @@ All functions include comprehensive error handling and will:
 - Return appropriate default values or $false/$null on failure
 - Throw exceptions only for critical errors that should stop execution
 - Provide detailed error messages for troubleshooting
+
+## Error Handling Best Practices
+
+### **Critical Rule: Scripts Must Continue When Possible**
+
+- ✅ **Use global try-catch** around entire script, not just parts
+- ✅ **Handle non-critical errors gracefully** (logging, cleanup, optional operations)
+- ✅ **Only terminate on critical errors** (missing required files, permission failures)
+- ✅ **Use robust logging functions** that handle edge cases (empty strings, null values)
+
+### **Robust Script Structure**
+```powershell
+try {
+    # Entire script wrapped in try-catch
+    Write-RMMLog "Starting script..." -Level Status
+    Write-RMMLog ""  # Safe spacing - handled gracefully
+
+    # Non-critical operations
+    try {
+        # Optional cleanup
+    } catch {
+        Write-RMMLog "Cleanup failed (continuing): $($_.Exception.Message)" -Level Warning
+    }
+
+    # Critical validation
+    if (-not (Test-Path "required-file.msi")) {
+        throw "Critical: Required file missing"
+    }
+
+    # Main logic here
+
+} catch {
+    Write-RMMLog "Script failed: $($_.Exception.Message)" -Level Failed
+    exit 1
+} finally {
+    Write-RMMLog "Script completed" -Level Status
+}
+```
+
+**📖 See**: [Error Handling Best Practices](Error-Handling-Best-Practices.md) for complete guide
 
 ## Performance Considerations
 
