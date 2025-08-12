@@ -67,6 +67,7 @@ docs/              # Documentation
 
 - [Deployment Guide](docs/Deployment-Guide.md) - How to deploy scripts
 - [Function Reference](docs/Function-Reference.md) - Available function patterns
+- [Best Practices](docs/Function-Reference.md#best-practices) - **Critical PowerShell development guidelines**
 - [Component Categories](docs/Datto-RMM-Component-Categories.md) - RMM component types
 - [File Attachment Guide](docs/Datto-RMM-File-Attachment-Guide.md) - Using file attachments
 

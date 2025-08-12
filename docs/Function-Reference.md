@@ -510,7 +510,33 @@ if ($fileAge.TotalMinutes -lt 5) {
 }
 ```
 
-## Performance Considerations
+## Best Practices
+
+### Array Handling in Loops (Critical PowerShell Pitfall)
+
+**Problem**: When building a collection of items inside a `ForEach-Object` loop in PowerShell, using the `+=` operator to add items to a standard array (`@()`) can fail due to scoping issues. The array may appear empty outside the loop, even though items were added correctly inside it. This is a common and difficult-to-diagnose problem.
+
+**Solution**: To avoid this critical pitfall, always use a generic list (`[System.Collections.Generic.List[object]]`) and the `.Add()` method when building collections inside loops.
+
+**Incorrect (Avoid this pattern):**
+
+```powershell
+$foundItems = @()
+Get-ChildItem | ForEach-Object {
+    $foundItems += $_ # This is unreliable and may result in an empty array
+}
+Write-Output $foundItems.Count # Often returns 0
+```
+
+**Correct (Use this pattern):**
+
+```powershell
+$foundItems = [System.Collections.Generic.List[object]]::new()
+Get-ChildItem | ForEach-Object {
+    $foundItems.Add($_) # This is the correct and reliable way to build a collection
+}
+Write-Output $foundItems.Count # Correctly returns the number of items
+```
 
 - Monitor scripts should embed only minimal functions needed for speed
 - Use `-UpdateCounters $false` in monitor logging functions to avoid counter overhead
