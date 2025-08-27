@@ -48,15 +48,22 @@ function Write-RMMLog {
     #>
     param(
         [Parameter(Mandatory=$true)]
+        [AllowEmptyString()]
         [string]$Message,
-        
+
         [Parameter(Mandatory=$true)]
         [ValidateSet('Success','Failed','Warning','Status','Config','Detect','Metric','Info')]
         [string]$Level,
-        
+
         [bool]$UpdateCounters = $true
     )
-    
+
+    # Handle empty messages for spacing
+    if ([string]::IsNullOrEmpty($Message)) {
+        Write-Host ""
+        return
+    }
+
     $prefix = switch ($Level) {
         'Success' { 'SUCCESS '; if ($UpdateCounters) { $Global:RMMSuccessCount++ } }
         'Failed'  { 'FAILED  '; if ($UpdateCounters) { $Global:RMMFailCount++ } }

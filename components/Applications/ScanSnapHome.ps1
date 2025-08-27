@@ -9,7 +9,7 @@ Installs or updates ScanSnap Home software optimized for Datto RMM Applications 
 - Intelligent installation vs. update detection
 - Comprehensive logging and error handling
 - Timeout protection for all operations
-- Bundled installer file support
+- Datto RMM file attachment support
 
 .COMPONENT
 Category: Applications (Software Deployment)
@@ -28,9 +28,10 @@ System.String - Progress messages and status information
 
 .EXAMPLE
 # Datto RMM Applications Component Usage:
-# ScriptName: "ScanSnapHome.ps1"
-# Component Type: Applications
-# Timeout: 30 minutes
+# 1. Create Applications component in Datto RMM
+# 2. Paste this ENTIRE script as component content
+# 3. Attach MSI installer file to component
+# 4. Deploy - NO launcher needed
 
 .NOTES
 Version: 2.0.0
@@ -55,26 +56,20 @@ CHANGELOG:
 #                                         Initial Setup                                                    #
 ############################################################################################################
 
-# Load shared functions if available (fallback to standalone mode if not)
-if ($Global:RMMFunctionsLoaded) {
-    Write-RMMLog "Using shared RMM function library v$($Global:RMMFunctionsVersion)" -Level Config
-} else {
-    Write-Output "INFO    Shared functions not loaded, using standalone mode"
-    
-    # Fallback logging function
-    function Write-RMMLog {
-        param([string]$Message, [string]$Level = 'Info')
-        $prefix = switch ($Level) {
-            'Success' { 'SUCCESS ' }
-            'Failed'  { 'FAILED  ' }
-            'Warning' { 'WARNING ' }
-            'Status'  { 'STATUS  ' }
-            'Config'  { 'CONFIG  ' }
-            'Info'    { 'INFO    ' }
-            default   { 'INFO    ' }
-        }
-        Write-Output "$prefix$Message"
+# Embedded logging function (copied from shared-functions/Core/RMMLogging.ps1)
+function Write-RMMLog {
+    param([string]$Message, [string]$Level = 'Info')
+    $prefix = switch ($Level) {
+        'Success' { 'SUCCESS ' }
+        'Failed'  { 'FAILED  ' }
+        'Warning' { 'WARNING ' }
+        'Status'  { 'STATUS  ' }
+        'Config'  { 'CONFIG  ' }
+        'Info'    { 'INFO    ' }
+        'Detect'  { 'DETECT  ' }
+        default   { 'INFO    ' }
     }
+    Write-Output "$prefix$Message"
 }
 
 ############################################################################################################
@@ -91,12 +86,8 @@ if ($Global:RMMFunctionsLoaded -and (Get-Command New-RMMDirectory -ErrorAction S
     }
 }
 
-# Start transcript using shared function if available
-if ($Global:RMMFunctionsLoaded -and (Get-Command Start-RMMTranscript -ErrorAction SilentlyContinue)) {
-    $transcriptPath = Start-RMMTranscript -LogName "ScanSnapHome-Applications" -LogDirectory $LogPath
-} else {
-    Start-Transcript -Path "$LogPath\ScanSnapHome-Applications.log" -Append
-}
+# Start transcript (embedded pattern from shared-functions/Core/RMMLogging.ps1)
+Start-Transcript -Path "$LogPath\ScanSnapHome-Applications.log" -Append
 
 Write-RMMLog "=============================================="
 Write-RMMLog "ScanSnap Home - Applications Component v2.0.0" -Level Status
@@ -104,29 +95,22 @@ Write-RMMLog "=============================================="
 Write-RMMLog "Component Category: Applications (Software Deployment)" -Level Config
 Write-RMMLog "Start Time: $(Get-Date)" -Level Config
 Write-RMMLog "Log Directory: $LogPath" -Level Config
-Write-RMMLog "Shared Functions: $($Global:RMMFunctionsLoaded)" -Level Config
+Write-RMMLog "Functions: Embedded (self-contained)" -Level Config
 Write-RMMLog ""
 
-# Pre-execution cleanup using shared functions if available
+# Pre-execution cleanup using embedded functions
 Write-RMMLog "Performing pre-execution cleanup..." -Level Status
 
+# Embedded cleanup functions
 $ProcessesToKill = @("WinSSHOfflineInstaller*", "SSHomeDownloadInstaller*", "WinSSHomeInstaller*", "SSUpdate")
 foreach ($ProcessName in $ProcessesToKill) {
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Stop-RMMProcess -ErrorAction SilentlyContinue)) {
-        Stop-RMMProcess -ProcessName $ProcessName.Replace("*", "") -Force | Out-Null
-    } else {
-        Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Stop-Process -Force
-    }
+    Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Stop-Process -Force
 }
 
 $TempPaths = @("$env:LOCALAPPDATA\Temp\SSHomeDownloadInstaller", "$env:TEMP\ScanSnapInstall")
 foreach ($Path in $TempPaths) {
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Remove-RMMDirectory -ErrorAction SilentlyContinue)) {
-        Remove-RMMDirectory -Path $Path -Recurse | Out-Null
-    } else {
-        if (Test-Path $Path) {
-            Remove-Item -Path $Path -Recurse -Force -ErrorAction SilentlyContinue
-        }
+    if (Test-Path $Path) {
+        Remove-Item -Path $Path -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -144,22 +128,7 @@ function Test-ScanSnapHomeInstalled {
     
     Write-RMMLog "Checking for existing ScanSnap Home installation..." -Level Status
     
-    # Use shared software detection if available
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Test-RMMSoftwareInstalled -ErrorAction SilentlyContinue)) {
-        try {
-            $isInstalled = Test-RMMSoftwareInstalled -Name "ScanSnap Home"
-            if ($isInstalled) {
-                $software = Get-RMMSoftware -Name "ScanSnap Home"
-                foreach ($app in $software) {
-                    Write-RMMLog "Found ScanSnap Home: $($app.DisplayName) - Version: $($app.Version)" -Level Detect
-                }
-            }
-            return $isInstalled
-        }
-        catch {
-            Write-RMMLog "Error using shared software detection: $($_.Exception.Message)" -Level Warning
-        }
-    }
+    # Embedded software detection
     
     # Fallback to manual registry detection
     $RegPaths = @(
@@ -205,7 +174,7 @@ try {
         
         # Installation logic would go here
         # This would include:
-        # - Extracting bundled installer files
+        # - Using attached installer files (via Datto RMM file attachment)
         # - Installing prerequisites (Visual C++ redistributables)
         # - Running silent installation
         
@@ -221,12 +190,8 @@ try {
     Write-RMMLog "Exit Code: $exitCode" -Level Config
     Write-RMMLog "Component Category: Applications" -Level Config
     
-    # Stop transcript using shared function if available
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Stop-RMMTranscript -ErrorAction SilentlyContinue)) {
-        Stop-RMMTranscript
-    } else {
-        Stop-Transcript
-    }
+    # Stop transcript
+    Stop-Transcript
     
     exit $exitCode
     
@@ -234,12 +199,8 @@ try {
     Write-RMMLog "ScanSnap Home Applications component failed: $($_.Exception.Message)" -Level Failed
     Write-RMMLog "Line: $($_.InvocationInfo.ScriptLineNumber)" -Level Failed
     
-    # Stop transcript using shared function if available
-    if ($Global:RMMFunctionsLoaded -and (Get-Command Stop-RMMTranscript -ErrorAction SilentlyContinue)) {
-        Stop-RMMTranscript
-    } else {
-        Stop-Transcript
-    }
+    # Stop transcript
+    Stop-Transcript
     
     exit 2
 }

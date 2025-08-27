@@ -215,20 +215,202 @@ function Get-RMMManufacturer {
     }
 }
 
+function Get-RMMUserSoftware {
+    <#
+    .SYNOPSIS
+    Searches for software installed at user level (inspired by Datto experts)
+
+    .DESCRIPTION
+    Comprehensive user-level software detection using registry scanning.
+    Based on expert Datto RMM monitor patterns for maximum performance.
+
+    .PARAMETER SoftwareName
+    Software name to search for (supports regex patterns)
+
+    .PARAMETER IncludeSystemLevel
+    Also search system-level installations
+
+    .EXAMPLE
+    $userSoftware = Get-RMMUserSoftware -SoftwareName "Chrome"
+    $allChrome = Get-RMMUserSoftware -SoftwareName "Chrome" -IncludeSystemLevel
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$SoftwareName,
+
+        [switch]$IncludeSystemLevel
+    )
+
+    $results = @()
+
+    try {
+        # Search user-level software (Datto expert pattern)
+        Get-ChildItem "Registry::HKEY_USERS\" -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer } | ForEach-Object {
+            foreach ($node in @("Software", "Software\WOW6432Node")) {
+                $uninstallPath = "Registry::$_\$node\Microsoft\Windows\CurrentVersion\Uninstall"
+
+                if (Test-Path $uninstallPath -ErrorAction SilentlyContinue) {
+                    try {
+                        # Get user context information
+                        $domainName = (Get-ItemProperty "Registry::$_\Volatile Environment" -Name USERDOMAIN -ErrorAction SilentlyContinue).USERDOMAIN
+                        $username = (Get-ItemProperty "Registry::$_\Volatile Environment" -Name USERNAME -ErrorAction SilentlyContinue).USERNAME
+
+                        Get-ChildItem $uninstallPath -ErrorAction SilentlyContinue | ForEach-Object {
+                            $app = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
+
+                            if ($app.DisplayName -and $app.DisplayName -match [regex]::Escape($SoftwareName)) {
+                                $results += [PSCustomObject]@{
+                                    DisplayName = $app.DisplayName
+                                    Version = $app.DisplayVersion
+                                    Publisher = $app.Publisher
+                                    InstallDate = $app.InstallDate
+                                    InstallLocation = $app.InstallLocation
+                                    UninstallString = $app.UninstallString
+                                    UserContext = if ($domainName -and $username) { "$domainName\$username" } else { "Unknown User" }
+                                    InstallLevel = "User-Level"
+                                    Architecture = if ($node -like "*WOW6432Node*") { "x86" } else { "x64" }
+                                    RegistryPath = $_.PSPath
+                                }
+                            }
+                        }
+                    } catch {
+                        # Skip problematic user profiles
+                        continue
+                    }
+                }
+            }
+        }
+
+        # Include system-level if requested
+        if ($IncludeSystemLevel) {
+            $systemSoftware = Get-RMMSoftware -Name $SoftwareName
+            foreach ($app in $systemSoftware) {
+                $results += [PSCustomObject]@{
+                    DisplayName = $app.DisplayName
+                    Version = $app.Version
+                    Publisher = $app.Publisher
+                    InstallDate = $app.InstallDate
+                    InstallLocation = $app.InstallLocation
+                    UninstallString = $app.UninstallString
+                    UserContext = "System-Level"
+                    InstallLevel = "System-Level"
+                    Architecture = $app.Architecture
+                    RegistryPath = $app.RegistryPath
+                }
+            }
+        }
+
+        Write-RMMLog "Found $($results.Count) user-level software installations matching '$SoftwareName'" -Level Info
+        return $results
+
+    } catch {
+        Write-RMMLog "Error searching user-level software: $($_.Exception.Message)" -Level Warning
+        return @()
+    }
+}
+
+function Test-RMMMultipleSoftware {
+    <#
+    .SYNOPSIS
+    Tests multiple software installations with flexible alert logic (Datto expert pattern)
+
+    .DESCRIPTION
+    Advanced software detection supporting multiple search terms with configurable
+    alert conditions. Based on expert Datto RMM monitor patterns.
+
+    .PARAMETER SoftwareList
+    Array of software names to search for
+
+    .PARAMETER AlertMethod
+    Alert method: "EQ" (alert if found), "NE" (alert if not found)
+
+    .PARAMETER IncludeUserLevel
+    Include user-level software installations
+
+    .EXAMPLE
+    $result = Test-RMMMultipleSoftware -SoftwareList @("Chrome", "Firefox") -AlertMethod "NE"
+    $result = Test-RMMMultipleSoftware -SoftwareList @("Malware", "Adware") -AlertMethod "EQ" -IncludeUserLevel
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string[]]$SoftwareList,
+
+        [ValidateSet("EQ", "NE")]
+        [string]$AlertMethod = "NE",
+
+        [switch]$IncludeUserLevel
+    )
+
+    $results = @()
+    $alertTriggered = $false
+    $alertMessages = @()
+
+    foreach ($softwareName in $SoftwareList) {
+        $softwareFound = $false
+        $foundDetails = @()
+
+        # Search system-level
+        $systemSoftware = Get-RMMSoftware -Name $softwareName
+        if ($systemSoftware) {
+            $softwareFound = $true
+            $foundDetails += "System-Level: $($systemSoftware[0].DisplayName)"
+        }
+
+        # Search user-level if requested
+        if ($IncludeUserLevel) {
+            $userSoftware = Get-RMMUserSoftware -SoftwareName $softwareName
+            if ($userSoftware) {
+                $softwareFound = $true
+                foreach ($app in $userSoftware) {
+                    $foundDetails += "User-Level ($($app.UserContext)): $($app.DisplayName)"
+                }
+            }
+        }
+
+        # Apply alert logic (Datto expert pattern)
+        $shouldAlert = $false
+        if ($AlertMethod -eq "EQ" -and $softwareFound) {
+            $shouldAlert = $true
+            $alertMessages += "Software '$softwareName' is installed: $($foundDetails -join '; ')"
+        } elseif ($AlertMethod -eq "NE" -and -not $softwareFound) {
+            $shouldAlert = $true
+            $alertMessages += "Software '$softwareName' is not installed"
+        }
+
+        if ($shouldAlert) {
+            $alertTriggered = $true
+        }
+
+        $results += [PSCustomObject]@{
+            SoftwareName = $softwareName
+            Found = $softwareFound
+            Details = $foundDetails
+            ShouldAlert = $shouldAlert
+        }
+    }
+
+    return [PSCustomObject]@{
+        Results = $results
+        AlertTriggered = $alertTriggered
+        AlertMessages = $alertMessages
+        Summary = "$($results.Count) software items checked, $($results | Where-Object { $_.Found }).Count found"
+    }
+}
+
 function Remove-RMMSoftware {
     <#
     .SYNOPSIS
     Safely removes software using multiple methods with timeout protection
-    
+
     .PARAMETER SoftwareName
     Name of software to remove
-    
+
     .PARAMETER TimeoutSec
     Timeout for removal operation
-    
+
     .PARAMETER UseQuietUninstall
     Prefer quiet uninstall string if available
-    
+
     .EXAMPLE
     Remove-RMMSoftware -SoftwareName "HP Wolf Security" -TimeoutSec 300
     Remove-RMMSoftware -SoftwareName "Bloatware App" -UseQuietUninstall
@@ -236,19 +418,19 @@ function Remove-RMMSoftware {
     param(
         [Parameter(Mandatory=$true)]
         [string]$SoftwareName,
-        
+
         [int]$TimeoutSec = 300,
-        
+
         [switch]$UseQuietUninstall
     )
-    
+
     $software = Get-RMMSoftware -Name $SoftwareName
-    
+
     if (-not $software) {
         Write-RMMLog "Software '$SoftwareName' not found for removal" -Level Warning
         return $false
     }
-    
+
     $removed = $false
     
     foreach ($app in $software) {
