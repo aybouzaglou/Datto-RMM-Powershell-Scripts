@@ -79,3 +79,5 @@ out/
 # Serverless directories
 .serverless/
 .DS_Store
+.windsurf/rules/arcon.md
+Status:

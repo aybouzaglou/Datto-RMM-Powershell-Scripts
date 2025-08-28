@@ -24,6 +24,51 @@ function Write-RMMLog {
 }
 ```
 
+### Monitor Output Contract (Critical)
+For Datto RMM Custom Monitors, output must follow this exact contract so RMM parses results reliably:
+
+- Use Write-Host exclusively (no Write-Output/Write-Verbose)
+- Emit exactly one diagnostic section:
+  - "<-Start Diagnostic->" ... "<-End Diagnostic->"
+- Emit exactly one result section immediately after diagnostics:
+  - "<-Start Result->"
+  - A single line beginning with "Status=..."
+  - "<-End Result->"
+- Exit code: 0 for OK, non-zero for alert states
+
+Minimal example:
+```powershell
+# Diagnostics
+Write-Host '<-Start Diagnostic->'
+Write-Host 'My Monitor: running checks...'
+Write-Host '<-End Diagnostic->'
+
+# Results (single line)
+Write-Host '<-Start Result->'
+Write-Host 'Status=OK: All checks passed'
+Write-Host '<-End Result->'
+exit 0
+```
+
+Recommended helper pattern (centralized):
+```powershell
+function Write-MonitorAlert { param([string]$Message)
+  Write-Host '<-End Diagnostic->'
+  Write-Host '<-Start Result->'
+  Write-Host "Status=$Message"
+  Write-Host '<-End Result->'
+  exit 1
+}
+
+function Write-MonitorSuccess { param([string]$Message)
+  Write-Host '<-End Diagnostic->'
+  Write-Host '<-Start Result->'
+  Write-Host "Status=$Message"
+  Write-Host '<-End Result->'
+  exit 0
+}
+```
+
 ## Repository Structure
 
 ```

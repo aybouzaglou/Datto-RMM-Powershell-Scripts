@@ -44,18 +44,45 @@ function writeAlert ($message, $code) {
 
 ## 📋 Required Elements
 
-### **Result Markers (Critical)**
-```powershell
-Write-Host '<-Start Result->'
-Write-Host "Your status message here"
-Write-Host '<-End Result->'
-```
-
-### **Diagnostic Markers**
+### **Diagnostic Markers (Critical)**
 ```powershell
 Write-Host '<-Start Diagnostic->'
 # Your diagnostic output here
 Write-Host '<-End Diagnostic->'
+```
+
+### **Result Markers + Single Status Line (Critical)**
+RMM expects exactly one result block containing exactly one line that begins with `Status=`.
+
+```powershell
+Write-Host '<-Start Result->'
+Write-Host 'Status=OK: All checks passed'    # or 'Status=CRITICAL: <reason>'
+Write-Host '<-End Result->'
+```
+
+- Do not write multiple result lines
+- Do not mix Write-Output/Write-Verbose (use Write-Host only)
+- Exit code 0 for OK, non-zero for alerts
+
+### **Centralized Helpers (Recommended)**
+```powershell
+function Write-MonitorAlert {
+  param([string]$Message)
+  Write-Host '<-End Diagnostic->'
+  Write-Host '<-Start Result->'
+  Write-Host "Status=$Message"
+  Write-Host '<-End Result->'
+  exit 1
+}
+
+function Write-MonitorSuccess {
+  param([string]$Message)
+  Write-Host '<-End Diagnostic->'
+  Write-Host '<-Start Result->'
+  Write-Host "Status=$Message"
+  Write-Host '<-End Result->'
+  exit 0
+}
 ```
 
 ## ⚡ Performance Guidelines

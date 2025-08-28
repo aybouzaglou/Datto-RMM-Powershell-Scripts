@@ -37,6 +37,10 @@ C:\ProgramData\Debloat\Debloat.log
   1.0.0 - Initial focused debloat version
 #>
 
+# PSScriptAnalyzer suppressions for intentional design patterns
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '', Justification='Global counters needed for cross-function metrics tracking in RMM environment')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification='Variables are used across different script sections')]
+
 ############################################################################################################
 #                                         Initial Setup                                                    #
 ############################################################################################################
@@ -58,6 +62,7 @@ param (
 ############################################################################################################
 
 # Global counters for structured reporting
+# These are intentionally global for cross-function metrics tracking in Datto RMM
 $global:SuccessCount = 0
 $global:FailCount = 0
 $global:WarningCount = 0
@@ -802,9 +807,10 @@ foreach ($HPWin32App in $HPWin32Apps) {
 #                                       Dell Bloatware Removal                                            #
 ############################################################################################################
 
-if ($skipDell -ne "true") {
-    Write-Output "Dell bloatware removal: ENABLED"
-    Write-Output "Starting Dell bloatware removal..."
+if (-not $skipDell) {
+    Write-Output "STATUS   Dell bloatware removal: ENABLED"
+    Write-Output "STATUS   Starting Dell bloatware removal..."
+    $dellStartCount = $global:SuccessCount
 
 # Dell specific AppX packages to remove
 $DellApps = @(
@@ -898,41 +904,121 @@ $DellWin32Apps = @(
 
 Write-Output "Removing Dell Win32 applications..."
 foreach ($DellWin32App in $DellWin32Apps) {
+    Write-Output "Searching for: $DellWin32App"
+
     # Registry-based uninstall (Win32_Product is banned in Datto RMM)
     $uninstallKeys = @(
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
         "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
     )
 
-    foreach ($key in $uninstallKeys) {
-        $apps = Get-ItemProperty $key -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq $DellWin32App }
-        foreach ($app in $apps) {
-            if ($app.UninstallString) {
-                Write-Output "Removing $DellWin32App via registry"
+    $found = $false
+    foreach ($keyPath in $uninstallKeys) {
+        $regApps = Get-ItemProperty $keyPath -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq $DellWin32App }
+        foreach ($regApp in $regApps) {
+            if ($regApp.UninstallString) {
+                Write-Output "Found $DellWin32App in registry - Attempting uninstall..."
                 try {
-                    Start-Process -FilePath "cmd.exe" -ArgumentList "/c", $app.UninstallString, "/quiet" -Wait -NoNewWindow
-                    Write-Output "Removed $DellWin32App"
+                    $uninstallString = $regApp.UninstallString
+                    if ($uninstallString -like "*msiexec*") {
+                        # MSI uninstall
+                        $productCode = $uninstallString -replace ".*\{([^}]+)\}.*", '{$1}'
+                        if ($productCode -match "^\{[A-F0-9-]+\}$") {
+                            Write-Output "Using MSI uninstall for $DellWin32App"
+                            Start-Process "msiexec.exe" -ArgumentList "/x $productCode /quiet /norestart" -Wait -NoNewWindow
+                            Write-Output "Attempted MSI uninstall for $DellWin32App"
+                            $global:SuccessCount++
+                            $found = $true
+                            break
+                        }
+                    } else {
+                        # For EXE uninstallers, use proper silent switches
+                        Write-Output "Using EXE uninstall for $DellWin32App"
+                        # Clean up the uninstall string and add proper silent switches
+                        $cleanUninstall = $uninstallString -replace '"', ''
+                        if ($cleanUninstall -notlike "*/S*" -and $cleanUninstall -notlike "*/silent*" -and $cleanUninstall -notlike "*/quiet*") {
+                            # Add silent switches for known Dell uninstallers
+                            if ($cleanUninstall -like "*uninst.exe*" -or $cleanUninstall -like "*uninstall.exe*") {
+                                $silentArgs = "/S /v/qn"
+                            } else {
+                                $silentArgs = "/S"
+                            }
+                            Start-Process -FilePath $cleanUninstall -ArgumentList $silentArgs -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                        } else {
+                            # Already has silent switches
+                            Start-Process -FilePath $cleanUninstall -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                        }
+                        Write-Output "Attempted EXE uninstall for $DellWin32App"
+                        $global:SuccessCount++
+                        $found = $true
+                        break
+                    }
                 }
                 catch {
-                    Write-Output "Failed to remove $DellWin32App"
+                    Write-Output "Failed registry uninstall for ${DellWin32App}: $($_.Exception.Message)"
+                    $global:FailCount++
                 }
             }
+        }
+        if ($found) { break }
+    }
+
+    if (-not $found) {
+        Write-Output "$DellWin32App not found in any detection method"
+    }
+}
+
+# Stop Dell services that might be running
+$DellServices = @(
+    "DellOptimizer",
+    "Dell Optimizer",
+    "DellOptimizerUI",
+    "Dell SupportAssist",
+    "SupportAssistAgent",
+    "Dell Digital Delivery Service",
+    "DDVDataCollector",
+    "DDVRulesProcessor",
+    "DDVCollectorSvcApi",
+    "Dell Data Manager",
+    "Dell Device Client Service",
+    "Dell Foundation Services",
+    "Dell Update Service",
+    "DellClientManagementService"
+)
+
+Write-Output "Stopping Dell services..."
+foreach ($service in $DellServices) {
+    $svc = Get-Service -Name $service -ErrorAction SilentlyContinue
+    if ($svc) {
+        Write-Output "Stopping service: $service"
+        try {
+            Stop-Service -Name $service -Force -ErrorAction SilentlyContinue
+            Set-Service -Name $service -StartupType Disabled -ErrorAction SilentlyContinue
+            Write-Output "Stopped and disabled service: $service"
+            $global:SuccessCount++
+        }
+        catch {
+            Write-Output "Failed to stop service: $service"
+            $global:WarningCount++
         }
     }
 }
 
-    Write-Output "Dell bloatware removal completed."
+    $dellProcessed = $global:SuccessCount - $dellStartCount
+    Write-Output "RESULT   Dell bloatware removal completed"
+    Write-Output "METRIC   Dell_Apps_Processed=$dellProcessed"
 } else {
-    Write-Output "Dell bloatware removal: SKIPPED (skipdell=true)"
+    Write-Output "STATUS   Dell bloatware removal: SKIPPED (skipdell=true)"
 }
 
 ############################################################################################################
 #                                      Lenovo Bloatware Removal                                           #
 ############################################################################################################
 
-if ($skipLenovo -ne "true") {
-    Write-Output "Lenovo bloatware removal: ENABLED"
-    Write-Output "Starting Lenovo bloatware removal..."
+if (-not $skipLenovo) {
+    Write-Output "STATUS   Lenovo bloatware removal: ENABLED"
+    Write-Output "STATUS   Starting Lenovo bloatware removal..."
+    $lenovoStartCount = $global:SuccessCount
 
 # Lenovo specific AppX packages to remove
 $LenovoApps = @(
@@ -1047,26 +1133,63 @@ $LenovoWin32Apps = @(
 
 Write-Output "Removing Lenovo Win32 applications..."
 foreach ($LenovoWin32App in $LenovoWin32Apps) {
+    Write-Output "Searching for: $LenovoWin32App"
+
     # Registry-based uninstall (Win32_Product is banned in Datto RMM)
     $uninstallKeys = @(
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
         "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
     )
 
-    foreach ($key in $uninstallKeys) {
-        $apps = Get-ItemProperty $key -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq $LenovoWin32App }
-        foreach ($app in $apps) {
-            if ($app.UninstallString) {
-                Write-Output "Removing $LenovoWin32App via registry"
+    $found = $false
+    foreach ($keyPath in $uninstallKeys) {
+        $regApps = Get-ItemProperty $keyPath -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq $LenovoWin32App }
+        foreach ($regApp in $regApps) {
+            if ($regApp.UninstallString) {
+                Write-Output "Found $LenovoWin32App in registry - Attempting uninstall..."
                 try {
-                    Start-Process -FilePath "cmd.exe" -ArgumentList "/c", $app.UninstallString, "/quiet" -Wait -NoNewWindow
-                    Write-Output "Removed $LenovoWin32App"
+                    $uninstallString = $regApp.UninstallString
+                    if ($uninstallString -like "*msiexec*") {
+                        # MSI uninstall
+                        $productCode = $uninstallString -replace ".*\{([^}]+)\}.*", '{$1}'
+                        if ($productCode -match "^\{[A-F0-9-]+\}$") {
+                            Write-Output "Using MSI uninstall for $LenovoWin32App"
+                            Start-Process "msiexec.exe" -ArgumentList "/x $productCode /quiet /norestart" -Wait -NoNewWindow
+                            Write-Output "Attempted MSI uninstall for $LenovoWin32App"
+                            $global:SuccessCount++
+                            $found = $true
+                            break
+                        }
+                    } else {
+                        # For EXE uninstallers, use proper silent switches
+                        Write-Output "Using EXE uninstall for $LenovoWin32App"
+                        # Clean up the uninstall string and add proper silent switches
+                        $cleanUninstall = $uninstallString -replace '"', ''
+                        if ($cleanUninstall -notlike "*/S*" -and $cleanUninstall -notlike "*/silent*" -and $cleanUninstall -notlike "*/quiet*") {
+                            # Add silent switches
+                            $silentArgs = "/S /v/qn"
+                            Start-Process -FilePath $cleanUninstall -ArgumentList $silentArgs -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                        } else {
+                            # Already has silent switches
+                            Start-Process -FilePath $cleanUninstall -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                        }
+                        Write-Output "Attempted EXE uninstall for $LenovoWin32App"
+                        $global:SuccessCount++
+                        $found = $true
+                        break
+                    }
                 }
                 catch {
-                    Write-Output "Failed to remove $LenovoWin32App"
+                    Write-Output "Failed registry uninstall for ${LenovoWin32App}: $($_.Exception.Message)"
+                    $global:FailCount++
                 }
             }
         }
+        if ($found) { break }
+    }
+
+    if (-not $found) {
+        Write-Output "$LenovoWin32App not found in any detection method"
     }
 }
 
@@ -1097,9 +1220,11 @@ foreach ($process in $LenovoProcesses) {
     }
 }
 
-    Write-Output "Lenovo bloatware removal completed."
+    $lenovoProcessed = $global:SuccessCount - $lenovoStartCount
+    Write-Output "RESULT   Lenovo bloatware removal completed"
+    Write-Output "METRIC   Lenovo_Apps_Processed=$lenovoProcessed"
 } else {
-    Write-Output "Lenovo bloatware removal: SKIPPED (skiplenovo=true)"
+    Write-Output "STATUS   Lenovo bloatware removal: SKIPPED (skiplenovo=true)"
 }
 
 ############################################################################################################
