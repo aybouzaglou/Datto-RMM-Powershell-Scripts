@@ -15,7 +15,7 @@ Category=Applications ; Level=Medium(3) ; Timeout=900s ; Build=1.1.0
 .INPUTS
 customwhitelist(String) ; skipwindows(Boolean) ; skiphp(Boolean) ; skipdell(Boolean) ; skiplenovo(Boolean)
 .REQUIRES
-LocalSystem ; PSVersion >=2.0
+LocalSystem ; PSVersion >=5.0
 .PARAMETER customwhitelist
 Optional array of app names to preserve during removal
 .OUTPUTS
