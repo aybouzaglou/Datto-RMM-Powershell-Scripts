@@ -37,7 +37,7 @@ System.String - Progress messages and status information
 Version: 2.0.0
 Author: Enhanced for Datto RMM Function Library
 Component Category: Applications (Software Deployment)
-Compatible: PowerShell 2.0+, Datto RMM Environment
+Compatible: PowerShell 5.0+, Datto RMM Environment
 
 Datto RMM Applications Exit Codes:
 - 0: Success (installation or update completed)
