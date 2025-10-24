@@ -89,8 +89,8 @@ function Write-MonitorSuccess {
 
 - **Target**: <200ms execution time
 - **Maximum**: 3 seconds (hard limit)
-- **Direct deployment only** - no launchers for monitors
-- Embed all functions - no external dependencies
+- **Direct deployment only** - no launchers that pull scripts from external sources
+- Embed needed functions from shared-functions/ library for optimal performance
 
 ## 🔍 Expert Patterns from OneDrive Monitor
 
@@ -125,4 +125,4 @@ function Write-MonitorSuccess {
 - [ ] Handles "no user logged in" scenario
 - [ ] Provides meaningful diagnostic output
 - [ ] Uses defensive programming patterns
-- [ ] Self-contained (no external dependencies)
+- [ ] Embedded functions copied from shared-functions/ library (no launcher scripts)

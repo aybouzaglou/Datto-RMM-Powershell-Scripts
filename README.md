@@ -1,6 +1,6 @@
 # Datto RMM PowerShell Scripts
 
-Self-contained PowerShell scripts for Datto RMM with embedded functions.
+PowerShell scripts for Datto RMM with embedded functions for easy maintenance and deployment.
 
 ## Quick Start
 
@@ -14,15 +14,22 @@ Self-contained PowerShell scripts for Datto RMM with embedded functions.
 
 ## Architecture
 
-All scripts are self-contained with embedded functions. No network dependencies during execution.
+Scripts use embedded functions for maintainability and reliability. Each script is complete and deployable without pulling code from external sources.
 
 ```powershell
-# Example embedded function
+# Example embedded function (copied from shared-functions/)
 function Write-RMMLog {
     param([string]$Message, [string]$Level = 'Info')
     Write-Output "[$Level] $Message"
 }
 ```
+
+### Key Principles
+- ✅ **Copy functions** from `shared-functions/` library (for maintainability)
+- ✅ **Create custom functions** when shared functions don't fit your needs
+- ✅ **Use PowerShell modules** (`Import-Module`) when appropriate
+- ✅ **Download installers/resources** from vendors (Adobe, Microsoft, etc.)
+- ❌ **Avoid launcher scripts** that pull other scripts from external sources (GitHub wikis, etc.)
 
 ### Monitor Output Contract (Critical)
 For Datto RMM Custom Monitors, output must follow this exact contract so RMM parses results reliably:

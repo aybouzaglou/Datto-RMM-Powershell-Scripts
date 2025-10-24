@@ -26,10 +26,12 @@ For Applications that need installer files:
 
 ## Script Development
 
-### Self-Contained Requirements
-- All functions must be embedded in each script
-- Copy needed functions from `shared-functions/` into your script
-- No external dependencies or imports
+### Embedded Functions Approach
+- Copy needed functions from `shared-functions/` library into your script (for maintainability)
+- Create custom functions when shared functions don't meet your needs
+- Use `Import-Module` when appropriate for standard PowerShell modules
+- Download installers/resources from vendors as needed
+- Avoid launcher scripts that pull other scripts from external sources
 
 ### Example Embedded Function
 ```powershell
@@ -105,7 +107,7 @@ $Threshold = if ($env:Threshold) { [int]$env:Threshold } else { 10 }
 
 - **Test locally** before deploying to RMM
 - **Use Git branches** for development
-- **Embed all functions** - ensure scripts are self-contained
+- **Copy functions from shared-functions/** - ensures each script is complete and maintainable
 - **Start with test devices** for gradual rollout
 - **Monitor logs** for execution issues
 - **Monitors**: Use direct deployment only (no launchers for optimal performance)
