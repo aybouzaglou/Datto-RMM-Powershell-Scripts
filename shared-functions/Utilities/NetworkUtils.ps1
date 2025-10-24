@@ -13,7 +13,7 @@ Provides network-related utility functions optimized for Datto RMM environment:
 .NOTES
 Version: 3.0.0
 Author: Datto RMM Function Library
-Compatible: PowerShell 2.0+, Datto RMM Environment
+Compatible: PowerShell 5.0+, Datto RMM Environment
 #>
 
 function Set-RMMSecurityProtocol {

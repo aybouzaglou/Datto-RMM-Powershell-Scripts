@@ -12,7 +12,7 @@ Features:
 - Comprehensive error handling and logging
 - File attachment support for installers
 - Registry-based software detection
-- PowerShell 2.0+ compatible
+- PowerShell 5.0+ compatible
 
 .COMPONENT
 Category: Applications (Software Deployment)
@@ -36,7 +36,7 @@ ForceReinstall = false
 .NOTES
 Version: 1.0.0
 Author: Datto RMM Self-Contained Architecture
-Compatible: PowerShell 2.0+, Datto RMM Environment
+Compatible: PowerShell 5.0+, Datto RMM Environment
 Deployment: DIRECT (paste script content directly into Datto RMM)
 #>
 

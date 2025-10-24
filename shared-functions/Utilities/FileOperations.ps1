@@ -14,7 +14,7 @@ Provides file and directory utility functions optimized for Datto RMM environmen
 .NOTES
 Version: 3.0.0
 Author: Datto RMM Function Library
-Compatible: PowerShell 2.0+, Datto RMM Environment
+Compatible: PowerShell 5.0+, Datto RMM Environment
 #>
 
 function New-RMMDirectory {
@@ -272,7 +272,7 @@ function Expand-RMMArchive {
         
         switch ($ArchiveType) {
             'ZIP' {
-                # Use .NET Framework for ZIP extraction (PowerShell 2.0 compatible)
+                # Use .NET Framework for ZIP extraction (PowerShell 5.0+ compatible)
                 Add-Type -AssemblyName System.IO.Compression.FileSystem
                 [System.IO.Compression.ZipFile]::ExtractToDirectory($ArchivePath, $DestinationPath)
             }
