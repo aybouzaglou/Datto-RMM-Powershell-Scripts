@@ -1,4 +1,5 @@
 # Datto RMM PowerShell Scripts
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/aybouzaglou/Datto-RMM-Powershell-Scripts)
 
 Self-contained PowerShell scripts for Datto RMM with embedded functions.
 
