@@ -6,7 +6,12 @@ Configure Browser Extension Settings - Chrome and Edge Extension Deployment
 Self-contained script for deploying and configuring browser extensions (Chrome/Edge) via Group Policy registry settings.
 Configures extension installation, managed storage settings, branding, and security features.
 
-Designed for phishing protection and security browser extensions with customizable settings:
+All settings are configured with default values in the script. Only the CIPP Tenant ID is passed as an
+environment variable since it changes per customer tenant.
+
+To customize defaults: Edit the configuration section below before deploying to Datto RMM.
+
+Features:
 - Force installation of extensions
 - Configure notification preferences
 - Set CIPP reporting options
@@ -21,71 +26,75 @@ Timeout: 5 minutes recommended
 Changeable: Yes (can be changed to Applications category if needed)
 
 .ENVIRONMENT VARIABLES
-Chrome Configuration:
-- chromeExtensionId (String): Chrome extension ID (required)
-- chromeUpdateUrl (String): Chrome update URL (default: https://clients2.google.com/service/update2/crx)
+Required:
+- cippTenantId (String): Tenant ID/Domain for CIPP reporting (e.g., "contoso.onmicrosoft.com" or GUID)
 
-Edge Configuration:
-- edgeExtensionId (String): Edge extension ID (required)
-- edgeUpdateUrl (String): Edge update URL (default: https://edge.microsoft.com/extensionwebstorebase/v1/crx)
-
-Extension Configuration:
-- showNotifications (Integer): Show notifications - 0=disabled, 1=enabled (default: 1)
-- enableValidPageBadge (Integer): Show valid page badge - 0=disabled, 1=enabled (default: 0)
-- enablePageBlocking (Integer): Enable page blocking - 0=disabled, 1=enabled (default: 1)
-- forceToolbarPin (Integer): Force pin to toolbar - 0=no, 1=yes (default: 1)
-- installationMode (String): Installation mode (default: force_installed)
-
-CIPP Reporting:
-- enableCippReporting (Integer): Enable CIPP reporting - 0=disabled, 1=enabled (default: 0)
-- cippServerUrl (String): CIPP server URL (required if CIPP enabled)
-- cippTenantId (String): Tenant ID/Domain (required if CIPP enabled)
-
-Detection Configuration:
-- customRulesUrl (String): Custom rules config URL (optional)
-- updateInterval (Integer): Update interval in hours, 1-168 (default: 24)
-- urlAllowlist (String): Comma-separated list of allowed URLs (optional)
-
-Debug and Logging:
-- enableDebugLogging (Integer): Enable debug logging - 0=disabled, 1=enabled (default: 0)
-- enableRMMLogging (Boolean): Enable detailed RMM logging (default: true)
-
-Custom Branding:
-- companyName (String): Company name (default: CyberDrain)
-- companyURL (String): Company URL with protocol (default: https://cyberdrain.com)
-- productName (String): Product name (default: Check - Phishing Protection)
-- supportEmail (String): Support email address (optional)
-- primaryColor (String): Primary color hex code (default: #F77F00)
-- logoUrl (String): Logo URL with https protocol (optional)
+Optional:
+- enableRMMLogging (Boolean): Enable detailed RMM transcript logging (default: true)
 
 .EXAMPLES
-Environment Variables:
-chromeExtensionId = "benimdeioplgkhanklclahllklceahbe"
-edgeExtensionId = "knepjpocdagponkonnbggpcnhnaikajg"
-showNotifications = 1
-enablePageBlocking = 1
-companyName = "Contoso Corp"
-companyURL = "https://contoso.com"
+Environment Variables in Datto RMM:
+cippTenantId = "contoso.onmicrosoft.com"
 enableRMMLogging = true
 
 .NOTES
-Version: 1.0.0
+Version: 1.0.1
 Author: Datto RMM Self-Contained Architecture
 Compatible: PowerShell 2.0+, Datto RMM Environment
 Deployment: DIRECT (paste script content directly into Datto RMM)
 Requires: Administrative privileges for registry modifications
+
 Exit Codes:
   0 = Success
-  1 = Missing required extension IDs
+  1 = Missing required tenant ID
   2 = Registry configuration error
-  3 = Validation error
+  3 = Partial success (one browser configured)
+
+To Customize: Edit the "CONFIGURATION SECTION" below before deploying to Datto RMM.
 #>
 
 param(
-    [string]$chromeExtensionId = $env:chromeExtensionId,
-    [string]$edgeExtensionId = $env:edgeExtensionId,
+    [string]$cippTenantId = $env:cippTenantId,
     [bool]$enableRMMLogging = ($env:enableRMMLogging -ne "false")
 )
+
+############################################################################################################
+#                                    CONFIGURATION SECTION                                                 #
+#                        EDIT THESE VALUES BEFORE DEPLOYING TO DATTO RMM                                  #
+############################################################################################################
+
+# Extension IDs
+$chromeExtensionId = "benimdeioplgkhanklclahllklceahbe"
+$chromeUpdateUrl = "https://clients2.google.com/service/update2/crx"
+
+$edgeExtensionId = "knepjpocdagponkonnbggpcnhnaikajg"
+$edgeUpdateUrl = "https://edge.microsoft.com/extensionwebstorebase/v1/crx"
+
+# Extension Configuration Settings
+$showNotifications = 1       # 0 = Disabled, 1 = Enabled (default: 1)
+$enableValidPageBadge = 0    # 0 = Disabled, 1 = Enabled (default: 0)
+$enablePageBlocking = 1      # 0 = Disabled, 1 = Enabled (default: 1)
+$forceToolbarPin = 1         # 0 = Not pinned, 1 = Force pinned (default: 1)
+$installationMode = "force_installed"
+
+# CIPP Reporting Configuration
+$enableCippReporting = 1     # 0 = Disabled, 1 = Enabled (default: 1)
+$cippServerUrl = "https://cipp.cyberdrain.com"  # Your CIPP server URL (include https://)
+# Note: $cippTenantId comes from environment variable (set per tenant in Datto RMM)
+
+# Detection Configuration
+$customRulesUrl = ""         # Custom rules URL (leave blank if not using)
+$updateInterval = 24         # Update interval in hours, 1-168 (default: 24)
+$urlAllowlist = @()          # Example: @("https://example1.com", "https://*.example2.com")
+$enableDebugLogging = 0      # 0 = Disabled, 1 = Enabled (default: 0)
+
+# Custom Branding Settings
+$companyName = "CyberDrain"
+$companyURL = "https://cyberdrain.com"
+$productName = "Check - Phishing Protection"
+$supportEmail = ""           # Support email (optional)
+$primaryColor = "#F77F00"    # Hex color code
+$logoUrl = ""                # Logo URL with https:// (optional, recommended 48x48px)
 
 ############################################################################################################
 #                                    EMBEDDED FUNCTION LIBRARY                                            #
@@ -115,29 +124,6 @@ function Write-RMMLog {
     }
 
     Write-Output "$prefix$Message"
-}
-
-# Embedded environment variable function
-function Get-RMMVariable {
-    param(
-        [string]$Name,
-        [string]$Type = "String",
-        $Default = $null
-    )
-
-    $envValue = [Environment]::GetEnvironmentVariable($Name)
-    if ([string]::IsNullOrWhiteSpace($envValue)) { return $Default }
-
-    switch ($Type) {
-        "Integer" {
-            try { [int]$envValue }
-            catch { $Default }
-        }
-        "Boolean" {
-            $envValue -eq 'true' -or $envValue -eq '1' -or $envValue -eq 'yes'
-        }
-        default { $envValue }
-    }
 }
 
 # Function to configure extension settings
@@ -180,7 +166,7 @@ function Configure-ExtensionSettings {
             }
 
             # Clear any existing properties
-            Get-ItemProperty -Path $urlAllowlistKey | ForEach-Object {
+            Get-ItemProperty -Path $urlAllowlistKey -ErrorAction SilentlyContinue | ForEach-Object {
                 $_.PSObject.Properties | Where-Object { $_.Name -notmatch '^PS' } | ForEach-Object {
                     Remove-ItemProperty -Path $urlAllowlistKey -Name $_.Name -Force -ErrorAction SilentlyContinue
                 }
@@ -258,75 +244,39 @@ if ($enableRMMLogging) {
 }
 
 Write-RMMLog "=============================================="
-Write-RMMLog "Browser Extension Configuration v1.0.0" -Level Status
+Write-RMMLog "Browser Extension Configuration v1.0.1" -Level Status
 Write-RMMLog "=============================================="
 Write-RMMLog "Component Category: Scripts (Security/Browser Management)" -Level Config
 Write-RMMLog "Start Time: $(Get-Date)" -Level Config
 Write-RMMLog ""
 
-# Validate required parameters
+# Validate required tenant ID
 $exitCode = 0
 
-# Process Chrome extension ID
-$chromeExtId = Get-RMMVariable -Name "chromeExtensionId" -Default ""
-if ([string]::IsNullOrWhiteSpace($chromeExtId)) {
-    $chromeExtId = "benimdeioplgkhanklclahllklceahbe"
-    Write-RMMLog "Using default Chrome extension ID: $chromeExtId" -Level Config
-} else {
-    Write-RMMLog "Using configured Chrome extension ID: $chromeExtId" -Level Config
+if ([string]::IsNullOrWhiteSpace($cippTenantId)) {
+    Write-RMMLog "REQUIRED: cippTenantId environment variable must be set in Datto RMM" -Level Failed
+    Write-RMMLog "This should be your tenant domain (e.g., contoso.onmicrosoft.com) or GUID" -Level Failed
+    if ($enableRMMLogging) { Stop-Transcript }
+    exit 1
 }
 
-# Process Edge extension ID
-$edgeExtId = Get-RMMVariable -Name "edgeExtensionId" -Default ""
-if ([string]::IsNullOrWhiteSpace($edgeExtId)) {
-    $edgeExtId = "knepjpocdagponkonnbggpcnhnaikajg"
-    Write-RMMLog "Using default Edge extension ID: $edgeExtId" -Level Config
-} else {
-    Write-RMMLog "Using configured Edge extension ID: $edgeExtId" -Level Config
-}
-
-# Process all configuration variables
-$showNotifications = Get-RMMVariable -Name "showNotifications" -Type "Integer" -Default 1
-$enableValidPageBadge = Get-RMMVariable -Name "enableValidPageBadge" -Type "Integer" -Default 0
-$enablePageBlocking = Get-RMMVariable -Name "enablePageBlocking" -Type "Integer" -Default 1
-$forceToolbarPin = Get-RMMVariable -Name "forceToolbarPin" -Type "Integer" -Default 1
-$enableCippReporting = Get-RMMVariable -Name "enableCippReporting" -Type "Integer" -Default 0
-$cippServerUrl = Get-RMMVariable -Name "cippServerUrl" -Default ""
-$cippTenantId = Get-RMMVariable -Name "cippTenantId" -Default ""
-$customRulesUrl = Get-RMMVariable -Name "customRulesUrl" -Default ""
-$updateInterval = Get-RMMVariable -Name "updateInterval" -Type "Integer" -Default 24
-$enableDebugLogging = Get-RMMVariable -Name "enableDebugLogging" -Type "Integer" -Default 0
-$installationMode = Get-RMMVariable -Name "installationMode" -Default "force_installed"
-
-# Custom Branding Settings
-$companyName = Get-RMMVariable -Name "companyName" -Default "CyberDrain"
-$companyURL = Get-RMMVariable -Name "companyURL" -Default "https://cyberdrain.com"
-$productName = Get-RMMVariable -Name "productName" -Default "Check - Phishing Protection"
-$supportEmail = Get-RMMVariable -Name "supportEmail" -Default ""
-$primaryColor = Get-RMMVariable -Name "primaryColor" -Default "#F77F00"
-$logoUrl = Get-RMMVariable -Name "logoUrl" -Default ""
-
-# URL Allowlist processing
-$urlAllowlistString = Get-RMMVariable -Name "urlAllowlist" -Default ""
-$urlAllowlist = @()
-if (![string]::IsNullOrWhiteSpace($urlAllowlistString)) {
-    $urlAllowlist = $urlAllowlistString -split ',' | ForEach-Object { $_.Trim() } | Where-Object { ![string]::IsNullOrWhiteSpace($_) }
-    Write-RMMLog "Parsed $($urlAllowlist.Count) URLs from allowlist" -Level Config
-}
+Write-RMMLog "CIPP Tenant ID: $cippTenantId" -Level Config
 
 # Validate CIPP configuration if enabled
 if ($enableCippReporting -eq 1) {
-    if ([string]::IsNullOrWhiteSpace($cippServerUrl) -or [string]::IsNullOrWhiteSpace($cippTenantId)) {
-        Write-RMMLog "CIPP reporting enabled but cippServerUrl or cippTenantId not provided" -Level Warning
+    if ([string]::IsNullOrWhiteSpace($cippServerUrl)) {
+        Write-RMMLog "CIPP reporting enabled but cippServerUrl not configured in script" -Level Warning
         Write-RMMLog "Disabling CIPP reporting" -Level Warning
         $enableCippReporting = 0
     } else {
-        Write-RMMLog "CIPP reporting enabled: $cippServerUrl (Tenant: $cippTenantId)" -Level Config
+        Write-RMMLog "CIPP reporting enabled: $cippServerUrl" -Level Config
     }
 }
 
 Write-RMMLog ""
 Write-RMMLog "Configuration Summary:" -Level Config
+Write-RMMLog "- Chrome Extension ID: $chromeExtensionId" -Level Config
+Write-RMMLog "- Edge Extension ID: $edgeExtensionId" -Level Config
 Write-RMMLog "- Show Notifications: $showNotifications" -Level Config
 Write-RMMLog "- Enable Valid Page Badge: $enableValidPageBadge" -Level Config
 Write-RMMLog "- Enable Page Blocking: $enablePageBlocking" -Level Config
@@ -360,8 +310,8 @@ $config = @{
     primaryColor = $primaryColor
     logoUrl = $logoUrl
     installationMode = $installationMode
-    chromeExtensionId = $chromeExtId
-    edgeExtensionId = $edgeExtId
+    chromeExtensionId = $chromeExtensionId
+    edgeExtensionId = $edgeExtensionId
 }
 
 # Main execution
@@ -369,18 +319,16 @@ try {
     Write-RMMLog "Starting browser extension configuration..." -Level Status
 
     # Define registry paths
-    $chromeUpdateUrl = Get-RMMVariable -Name "chromeUpdateUrl" -Default "https://clients2.google.com/service/update2/crx"
-    $chromeManagedStorageKey = "HKLM:\SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\$chromeExtId\policy"
-    $chromeExtensionSettingsKey = "HKLM:\SOFTWARE\Policies\Google\Chrome\ExtensionSettings\$chromeExtId"
+    $chromeManagedStorageKey = "HKLM:\SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\$chromeExtensionId\policy"
+    $chromeExtensionSettingsKey = "HKLM:\SOFTWARE\Policies\Google\Chrome\ExtensionSettings\$chromeExtensionId"
 
-    $edgeUpdateUrl = Get-RMMVariable -Name "edgeUpdateUrl" -Default "https://edge.microsoft.com/extensionwebstorebase/v1/crx"
-    $edgeManagedStorageKey = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\$edgeExtId\policy"
-    $edgeExtensionSettingsKey = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\ExtensionSettings\$edgeExtId"
+    $edgeManagedStorageKey = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\$edgeExtensionId\policy"
+    $edgeExtensionSettingsKey = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\ExtensionSettings\$edgeExtensionId"
 
     # Configure Chrome extension
     Write-RMMLog "Configuring Chrome extension..." -Level Status
     $chromeSuccess = Configure-ExtensionSettings `
-        -ExtensionId $chromeExtId `
+        -ExtensionId $chromeExtensionId `
         -UpdateUrl $chromeUpdateUrl `
         -ManagedStorageKey $chromeManagedStorageKey `
         -ExtensionSettingsKey $chromeExtensionSettingsKey `
@@ -394,7 +342,7 @@ try {
     # Configure Edge extension
     Write-RMMLog "Configuring Edge extension..." -Level Status
     $edgeSuccess = Configure-ExtensionSettings `
-        -ExtensionId $edgeExtId `
+        -ExtensionId $edgeExtensionId `
         -UpdateUrl $edgeUpdateUrl `
         -ManagedStorageKey $edgeManagedStorageKey `
         -ExtensionSettingsKey $edgeExtensionSettingsKey `
