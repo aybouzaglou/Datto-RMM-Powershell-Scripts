@@ -4,13 +4,16 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Repository Overview
 
-This is a **Datto RMM PowerShell Scripts** repository containing self-contained PowerShell scripts for Datto RMM with embedded functions. All scripts are designed for direct deployment to Datto RMM components without external dependencies during execution.
+This is a **Datto RMM PowerShell Scripts** repository containing PowerShell scripts for Datto RMM with embedded functions. Scripts are designed for direct deployment to Datto RMM components without needing to pull code from external sources.
 
 ## Key Architecture Principles
 
-### Self-Contained Design
-- **All functions are embedded directly in each script**
-- No external imports or dot-sourcing
+### Embedded Functions Design
+- **Functions are copied from shared-functions/ library and embedded in each script** (for maintainability)
+- **Create custom functions** when shared functions don't meet your needs
+- **Use Import-Module** when appropriate for standard PowerShell modules
+- **Download installers/resources** from vendors as needed
+- **Avoid launcher scripts** that pull other scripts from external sources (GitHub wikis, etc.)
 - Scripts are copied from `components/` and pasted directly into Datto RMM to create components
 
 ### Direct Deployment Model
