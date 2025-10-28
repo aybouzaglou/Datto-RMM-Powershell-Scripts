@@ -1,17 +1,16 @@
 <#
 .SYNOPSIS
-Comprehensive Lenovo Vantage uninstaller for Datto RMM
+Lenovo Vantage uninstaller for Datto RMM using attached VantageInstaller.exe
 
 .DESCRIPTION
 This script completely removes Lenovo Vantage and Commercial Vantage using the official VantageInstaller.exe tool.
-Handles both consumer and commercial versions, with support for file attachments and automatic download.
+Handles both consumer and commercial versions using the attached installer file.
 
 Features:
-- Supports Datto RMM file attachments (preferred method)
-- Falls back to automatic download from Lenovo CDN if no attachment
+- Uses attached VantageInstaller.exe from Datto RMM file attachment
 - Uninstalls both Lenovo Vantage and Commercial Vantage
 - Cleans up AppX packages and residual files
-- Process termination for clean uninstall
+- Force terminates Vantage processes for clean uninstall
 - Comprehensive logging and error handling
 
 .COMPONENT
@@ -21,26 +20,13 @@ Timeout: 15-20 minutes recommended
 Changeable: Yes
 
 .ENVIRONMENT VARIABLES
-- InstallerFile (String): Name of attached VantageInstaller.exe file (default: "VantageInstaller.exe")
-- InstallerURL (String): Fallback URL for VantageInstaller.exe download (optional)
-- ForceKill (Boolean): Force terminate Vantage processes before uninstall (default: true)
-- CleanupAppx (Boolean): Remove AppX packages for Vantage (default: true)
-- DetailedLogging (Boolean): Enable verbose logging output (default: true)
+None - All settings are configured as defaults
 
 .EXAMPLES
-Example 1 - Using File Attachment (Recommended):
-1. Download VantageInstaller.exe from: https://download.lenovo.com/pccbbs/thinkvantage_en/commercial_vantage/VantageInstaller.exe
+Usage:
+1. Extract VantageInstaller.exe from the Commercial Vantage package
 2. Attach VantageInstaller.exe to the Datto RMM component
-3. Set environment variables:
-   InstallerFile = VantageInstaller.exe
-   ForceKill = true
-   CleanupAppx = true
-
-Example 2 - Using Automatic Download:
-Environment Variables:
-ForceKill = true
-CleanupAppx = true
-(No InstallerFile specified - will auto-download)
+3. Deploy to target devices
 
 .NOTES
 Version: 1.0.0
@@ -48,6 +34,7 @@ Author: Datto RMM Self-Contained Architecture
 Component Category: Applications (Software Removal)
 Compatible: PowerShell 5.0+, Windows 10/11
 Deployment: DIRECT (paste script content directly into Datto RMM)
+Requirements: VantageInstaller.exe must be attached to the component
 
 .LINK
 https://blog.lenovocdrt.com/deploying-commercial-vantage-with-intune/
@@ -69,44 +56,9 @@ if (-not (Test-Path $LogPath)) {
 $LogFile = Join-Path $LogPath "LenovoVantageUninstall-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
 Start-Transcript -Path $LogFile -Append
 
-# Environment variable processing
-function Get-RMMVariable {
-    param(
-        [string]$Name,
-        [string]$Type = "String",
-        $Default = $null
-    )
-
-    $value = [Environment]::GetEnvironmentVariable($Name)
-    if ([string]::IsNullOrWhiteSpace($value)) {
-        return $Default
-    }
-
-    switch ($Type) {
-        "Boolean" {
-            return $value -eq "true" -or $value -eq "1" -or $value -eq "yes"
-        }
-        "Integer" {
-            try { return [int]$value }
-            catch { return $Default }
-        }
-        default {
-            return $value
-        }
-    }
-}
-
-# Process environment variables
-$InstallerFile = Get-RMMVariable -Name "InstallerFile" -Default "VantageInstaller.exe"
-$InstallerURL = Get-RMMVariable -Name "InstallerURL" -Default "https://download.lenovo.com/pccbbs/thinkvantage_en/commercial_vantage/VantageInstaller.exe"
-$ForceKill = Get-RMMVariable -Name "ForceKill" -Type "Boolean" -Default $true
-$CleanupAppx = Get-RMMVariable -Name "CleanupAppx" -Type "Boolean" -Default $true
-$DetailedLogging = Get-RMMVariable -Name "DetailedLogging" -Type "Boolean" -Default $true
-
-# Global variables for installer paths
-$AttachedInstallerPath = Join-Path (Get-Location) $InstallerFile
-$TempInstallerPath = Join-Path $env:TEMP "VantageInstaller.exe"
-$InstallerPath = $null  # Will be determined based on availability
+# Hard-coded configuration (no environment variables needed)
+$InstallerFileName = "VantageInstaller.exe"
+$InstallerPath = Join-Path (Get-Location) $InstallerFileName
 
 ############################################################################################################
 #                                    EMBEDDED FUNCTION LIBRARY                                             #
@@ -232,7 +184,6 @@ function Stop-VantageProcesses {
     .SYNOPSIS
     Terminates all Lenovo Vantage related processes
     #>
-    param([bool]$ForceKill = $true)
 
     Write-RMMLog "Checking for Lenovo Vantage processes..." -Level Status
 
@@ -256,14 +207,8 @@ function Stop-VantageProcesses {
 
             foreach ($process in $processes) {
                 try {
-                    if ($ForceKill) {
-                        $process | Stop-Process -Force -ErrorAction Stop
-                        Write-RMMLog "Force killed: $processName (PID: $($process.Id))" -Level Success
-                    }
-                    else {
-                        $process | Stop-Process -ErrorAction Stop
-                        Write-RMMLog "Stopped: $processName (PID: $($process.Id))" -Level Success
-                    }
+                    $process | Stop-Process -Force -ErrorAction Stop
+                    Write-RMMLog "Force killed: $processName (PID: $($process.Id))" -Level Success
                     $processesKilled++
                 }
                 catch {
@@ -279,66 +224,6 @@ function Stop-VantageProcesses {
     else {
         Write-RMMLog "Terminated $processesKilled process(es)" -Level Success
         Start-Sleep -Seconds 3
-    }
-}
-
-function Get-VantageInstaller {
-    <#
-    .SYNOPSIS
-    Downloads VantageInstaller.exe from Lenovo CDN
-    #>
-    param([string]$URL, [string]$OutputPath)
-
-    Write-RMMLog "Downloading VantageInstaller.exe..." -Level Status
-    Write-RMMLog "Source: $URL" -Level Config
-    Write-RMMLog "Destination: $OutputPath" -Level Config
-
-    # Remove existing installer if present
-    if (Test-Path $OutputPath) {
-        try {
-            Remove-Item -Path $OutputPath -Force -ErrorAction Stop
-            Write-RMMLog "Removed existing installer" -Level Info
-        }
-        catch {
-            Write-RMMLog "Failed to remove existing installer: $($_.Exception.Message)" -Level Warning
-        }
-    }
-
-    try {
-        # Use TLS 1.2
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-        # Download with progress
-        $webClient = New-Object System.Net.WebClient
-        $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-
-        Write-RMMLog "Starting download..." -Level Status
-        $webClient.DownloadFile($URL, $OutputPath)
-        $webClient.Dispose()
-
-        # Verify download
-        if (Test-Path $OutputPath) {
-            $fileSize = (Get-Item $OutputPath).Length
-            $fileSizeMB = [math]::Round($fileSize / 1MB, 2)
-            Write-RMMLog "Download completed successfully" -Level Success
-            Write-RMMLog "File size: $fileSizeMB MB" -Level Info
-
-            # Verify it's an executable
-            if ($OutputPath -notlike "*.exe") {
-                Write-RMMLog "Downloaded file is not an executable" -Level Error
-                return $false
-            }
-
-            return $true
-        }
-        else {
-            Write-RMMLog "Download failed - file not found after download" -Level Error
-            return $false
-        }
-    }
-    catch {
-        Write-RMMLog "Download failed: $($_.Exception.Message)" -Level Error
-        return $false
     }
 }
 
@@ -549,12 +434,10 @@ try {
     Write-RMMLog ""
 
     Write-RMMLog "Configuration:" -Level Config
-    Write-RMMLog "- Installer File: $InstallerFile" -Level Config
-    Write-RMMLog "- Attached Path: $AttachedInstallerPath" -Level Config
-    Write-RMMLog "- Fallback URL: $InstallerURL" -Level Config
-    Write-RMMLog "- Force Kill Processes: $ForceKill" -Level Config
-    Write-RMMLog "- Cleanup AppX Packages: $CleanupAppx" -Level Config
-    Write-RMMLog "- Detailed Logging: $DetailedLogging" -Level Config
+    Write-RMMLog "- Installer File Name: $InstallerFileName" -Level Config
+    Write-RMMLog "- Expected Path: $InstallerPath" -Level Config
+    Write-RMMLog "- Force Kill Processes: Enabled" -Level Config
+    Write-RMMLog "- Cleanup AppX Packages: Enabled" -Level Config
     Write-RMMLog ""
 
     Write-RMMLog "System Information:" -Level Config
@@ -574,89 +457,53 @@ try {
         Write-RMMLog ""
 
         # Step 2: Stop Vantage processes
-        Stop-VantageProcesses -ForceKill $ForceKill
+        Stop-VantageProcesses
         Write-RMMLog ""
 
-        # Step 3: Locate or download VantageInstaller.exe
-        $installerReady = $false
-
-        # Priority 1: Check for attached file (Datto RMM file attachment)
-        if (Test-Path $AttachedInstallerPath) {
-            Write-RMMLog "Found attached VantageInstaller.exe" -Level Detect
-            Write-RMMLog "Location: $AttachedInstallerPath" -Level Config
-            $InstallerPath = $AttachedInstallerPath
-            $installerReady = $true
-        }
-        # Priority 2: Check temp location (from previous run or manual placement)
-        elseif (Test-Path $TempInstallerPath) {
-            Write-RMMLog "Found VantageInstaller.exe in temp location" -Level Detect
-            Write-RMMLog "Location: $TempInstallerPath" -Level Config
-            $InstallerPath = $TempInstallerPath
-            $installerReady = $true
-        }
-        # Priority 3: Download from Lenovo CDN
-        else {
-            Write-RMMLog "VantageInstaller.exe not found locally - attempting download" -Level Status
-            $InstallerPath = $TempInstallerPath
-            $installerReady = Get-VantageInstaller -URL $InstallerURL -OutputPath $InstallerPath
-        }
-
-        Write-RMMLog ""
-
-        # Step 4: Run uninstaller
-        $uninstallSuccess = $false
-        if ($installerReady) {
-            $uninstallSuccess = Uninstall-VantageWithInstaller -InstallerPath $InstallerPath
-            Write-RMMLog ""
-        }
-        else {
-            Write-RMMLog "Cannot proceed without VantageInstaller.exe" -Level Error
-        }
-
-        # Step 5: Clean up AppX packages if requested
-        if ($CleanupAppx) {
-            Remove-VantageAppxPackages
-            Write-RMMLog ""
-        }
-
-        # Step 6: Clean up residual folders
-        Remove-VantageFolders
-        Write-RMMLog ""
-
-        # Step 7: Final process check
-        Stop-VantageProcesses -ForceKill $ForceKill
-        Write-RMMLog ""
-
-        # Step 8: Verify uninstallation
-        Write-RMMLog "Verifying uninstallation..." -Level Status
-        $stillInstalled = Test-VantageInstalled
-
-        if (-not $stillInstalled) {
-            Write-RMMLog "Lenovo Vantage has been completely removed" -Level Success
-            $exitCode = 0
-        }
-        elseif ($uninstallSuccess) {
-            Write-RMMLog "Uninstaller completed but some components may remain" -Level Warning
-            Write-RMMLog "Manual cleanup or reboot may be required" -Level Warning
-            $exitCode = 2
-        }
-        else {
-            Write-RMMLog "Lenovo Vantage uninstallation failed" -Level Error
+        # Step 3: Verify VantageInstaller.exe exists
+        if (-not (Test-Path $InstallerPath)) {
+            Write-RMMLog "VantageInstaller.exe not found at: $InstallerPath" -Level Error
+            Write-RMMLog "Please ensure VantageInstaller.exe is attached to this Datto RMM component" -Level Error
             $exitCode = 1
         }
+        else {
+            Write-RMMLog "Found VantageInstaller.exe" -Level Detect
+            Write-RMMLog "Location: $InstallerPath" -Level Config
+            Write-RMMLog ""
 
-        # Clean up installer (only if it was downloaded to temp)
-        if ($InstallerPath -eq $TempInstallerPath -and (Test-Path $InstallerPath)) {
-            try {
-                Remove-Item -Path $InstallerPath -Force -ErrorAction Stop
-                Write-RMMLog "Cleaned up downloaded VantageInstaller.exe" -Level Success
+            # Step 4: Run uninstaller
+            $uninstallSuccess = Uninstall-VantageWithInstaller -InstallerPath $InstallerPath
+            Write-RMMLog ""
+
+            # Step 5: Clean up AppX packages
+            Remove-VantageAppxPackages
+            Write-RMMLog ""
+
+            # Step 6: Clean up residual folders
+            Remove-VantageFolders
+            Write-RMMLog ""
+
+            # Step 7: Final process check
+            Stop-VantageProcesses
+            Write-RMMLog ""
+
+            # Step 8: Verify uninstallation
+            Write-RMMLog "Verifying uninstallation..." -Level Status
+            $stillInstalled = Test-VantageInstalled
+
+            if (-not $stillInstalled) {
+                Write-RMMLog "Lenovo Vantage has been completely removed" -Level Success
+                $exitCode = 0
             }
-            catch {
-                Write-RMMLog "Failed to clean up installer: $($_.Exception.Message)" -Level Warning
+            elseif ($uninstallSuccess) {
+                Write-RMMLog "Uninstaller completed but some components may remain" -Level Warning
+                Write-RMMLog "Manual cleanup or reboot may be required" -Level Warning
+                $exitCode = 2
             }
-        }
-        elseif ($InstallerPath -eq $AttachedInstallerPath) {
-            Write-RMMLog "Keeping attached VantageInstaller.exe (not cleaning up)" -Level Info
+            else {
+                Write-RMMLog "Lenovo Vantage uninstallation failed" -Level Error
+                $exitCode = 1
+            }
         }
     }
 }
