@@ -116,12 +116,13 @@ docs/              # Documentation
 
 
 
-## Documentation
+## Developer Documentation
 
-- [Deployment Guide](docs/Deployment-Guide.md) - How to deploy scripts
-- [Function Reference](docs/Function-Reference.md) - Available function patterns
-- [Best Practices](docs/Function-Reference.md#best-practices) - **Critical PowerShell development guidelines**
-- [Component Categories](docs/Datto-RMM-Component-Categories.md) - RMM component types
-- [File Attachment Guide](docs/Datto-RMM-File-Attachment-Guide.md) - Using file attachments
+Start new work by reviewing the core guides in `docs/` so your scripts align with the project conventions:
 
-
+- [Function Reference](docs/Function-Reference.md) - Embedded helper functions and patterns
+- [Deployment Guide](docs/Deployment-Guide.md) - Packaging and releasing components
+- [Component Categories](docs/Datto-RMM-Component-Categories.md) - Picking the right Datto RMM template
+- [Monitor Development Guidelines](docs/Monitor-Development-Guidelines.md) - Output contract and testing for monitors
+- [Download Best Practices](docs/Datto-RMM-Download-Best-Practices.md) - Managing external installers
+- [File Attachment Guide](docs/Datto-RMM-File-Attachment-Guide.md) - Datto RMM copies attached files into the script working directory, so reference them directly by name (no temp paths required)

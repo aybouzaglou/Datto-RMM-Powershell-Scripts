@@ -8,7 +8,6 @@ Optimized for direct deployment to Datto RMM Scripts components.
 
 Features:
 - All functions embedded directly in script
-- No external dependencies during execution
 - Comprehensive error handling and logging
 - Flexible timeout support
 - System state validation
@@ -46,6 +45,9 @@ param(
     [bool]$EnableLogging = ($env:EnableLogging -ne "false"),
     [bool]$DryRun = ($env:DryRun -eq "true")
 )
+
+# Datto RMM copies any files attached to this component into the script's working directory.
+# Reference attachments by filename; see docs/Datto-RMM-File-Attachment-Guide.md for details.
 
 ############################################################################################################
 #                                    EMBEDDED FUNCTION LIBRARY                                            #

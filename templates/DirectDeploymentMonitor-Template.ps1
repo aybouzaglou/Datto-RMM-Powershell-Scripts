@@ -18,6 +18,9 @@ param(
     [bool]$DebugMode = ($env:DebugMode -eq 'true')
 )
 
+# Datto RMM copies any files attached to this component into the script's working directory.
+# Reference attachments by filename; see docs/Datto-RMM-File-Attachment-Guide.md for details.
+
 ############################################################################################################
 #                                    EMBEDDED FUNCTION LIBRARY                                            #
 ############################################################################################################

@@ -22,6 +22,9 @@ param(
     [string]$IncludeUserLevel = $env:IncludeUserLevel
 )
 
+# Datto RMM copies any files attached to this component into the script's working directory.
+# Reference attachments by filename; see docs/Datto-RMM-File-Attachment-Guide.md for details.
+
 # Diagnostic output start
 Write-Host '<-Start Diagnostic->'
 Write-Host "Software Monitor - Datto Expert Pattern"
