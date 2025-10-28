@@ -244,14 +244,14 @@ function Contains-Needle {
             return $true
         }
     }
-    
+
     # If exact match fails, try flexible regex pattern to handle HTML tags and whitespace
     # This handles cases where text is split by HTML tags like <br>, <span>, etc.
     try {
         # Split search string into words and create flexible pattern
         $words = $Needle -split '\s+'
         $regexPattern = ($words | ForEach-Object { [regex]::Escape($_) }) -join '.*?'
-        
+
         if ($CaseInsensitive) {
             return ($Content -imatch $regexPattern)
         } else {
@@ -332,19 +332,19 @@ foreach ($t in $Targets) {
         } else {
             # Final URI not available in this host/PowerShell version; skip redirect note
         }
-        
+
         # Debug info for troubleshooting (only show if string not found)
         if (-not $hit) {
             $contentPreview = if ($content.Length -gt 150) { $content.Substring(0, 150) + "..." } else { $content }
             Write-Host "- Debug - Content preview: $contentPreview"
             Write-Host "- Debug - Search string: '$Needle' (Case insensitive: $CaseInsensitive)"
         }
-        
+
         $finalSuffix    = if ($finalUri -and ($finalUri -ne $t)) { "; Final: $finalUri" } else { "" }
         $details.Add("  Requested: $t; Status: $status; Found: $hit$finalSuffix")
-        
-        if ($hit) { 
-            $foundAny = $true 
+
+        if ($hit) {
+            $foundAny = $true
             Write-Host "- SUCCESS: String '$Needle' found$redirectInfo"
         } else {
             Write-Host "- String '$Needle' not found in content (Status: $status)$redirectInfo"
