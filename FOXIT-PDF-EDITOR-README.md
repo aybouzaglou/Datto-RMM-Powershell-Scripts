@@ -6,8 +6,9 @@ This PowerShell script is designed for Datto RMM to deploy Foxit PDF Editor with
 ## Key Features
 - **Silent Installation**: Deploys Foxit PDF Editor without user interaction
 - **SSO Activation Support**: Prepares the application for SSO authentication by end users
+- **Always Latest Version**: Automatically downloads the newest stable release (no version hardcoding)
 - **Multi-language Support**: Automatically detects system language and installs appropriate version
-- **Architecture Detection**: Supports both 32-bit and 64-bit systems
+- **64-bit by Default**: Modern deployment approach (it's 2025 - 32-bit is legacy)
 - **Proxy Support**: Works in environments with proxy servers
 - **Digital Signature Verification**: Validates installer authenticity before installation
 - **Process Clash Detection**: Prevents installation conflicts with running instances
@@ -50,19 +51,17 @@ Controls behavior when Foxit PDF Editor is running:
 ## Installation Details
 
 ### Download Source
-- **CDN**: cdn01.foxitsoftware.com
-- **Version**: 2025.2.0 (latest stable as of November 2025)
-- **Installer Type**: Promotional EXE (compatible with most existing installations)
+- **CDN**: cdn01.foxitsoftware.com (via Foxit's automatic redirect)
+- **Version**: Always downloads the latest stable release automatically
+- **Architecture**: 64-bit only (modern deployment standard)
 
 ### What Gets Installed
-- Foxit PDF Editor (formerly PhantomPDF)
-- 64-bit or 32-bit version based on system architecture
+- Foxit PDF Editor (formerly PhantomPDF) - latest version
+- 64-bit version
 - Localized language pack based on Windows system language
 
 ### Installation Path
-Default installation paths:
-- 64-bit: `C:\Program Files\Foxit Software\Foxit PDF Editor\`
-- 32-bit: `C:\Program Files (x86)\Foxit Software\Foxit PDF Editor\`
+Default: `C:\Program Files\Foxit Software\Foxit PDF Editor\`
 
 ## Usage in Datto RMM
 
@@ -94,8 +93,8 @@ Can be integrated with Datto RMM Software Management for:
 
 ### Major Changes
 1. **Product**: Changed from Foxit PDF Reader to Foxit PDF Editor
-2. **Download URL**: Updated to use PhantomPDF CDN path structure
-3. **Version**: Using latest 2025.2.0 stable release
+2. **Always Latest**: Uses Foxit's redirect URL to automatically get newest version (no hardcoded versions)
+3. **64-bit Only**: Simplified to 64-bit deployments (modern Windows standard)
 4. **Process Names**: Updated to detect FoxitPDFEditor/FoxitPhantomPDF
 5. **Registry Paths**: Updated to check both "Foxit PDF Editor" and "Foxit PhantomPDF" keys
 6. **Uninstall Logic**: Handles both PDF Editor and legacy PhantomPDF installations
@@ -130,13 +129,9 @@ The original script supported the `usrFoxitKeySITE` variable for traditional lic
 - `cdn01.foxitsoftware.com`
 - `*.foxitsoftware.com`
 
-### Different Version Needed
-**Cause**: Script uses hardcoded version 2025.2.0
-**Solution**: Edit line ~348 in script to change version:
-```powershell
-$varVersion = "2025.2.0"  # Change to desired version (format: YYYY.M.P)
-# Note: Installer names use YYYYM format (e.g., 2025.2.0 → "20252")
-```
+### Script Always Downloads Older Version Than Expected
+**Cause**: Foxit's redirect URL may cache or serve a specific stable release
+**Solution**: The script uses Foxit's official redirect to get the latest stable version. If you need a specific version, you can modify the script to use a direct CDN URL instead of the redirect.
 
 ## Security Considerations
 
@@ -156,12 +151,11 @@ If verification fails, installation is aborted to prevent malware installation.
 
 ## Support and Maintenance
 
-### Updating to Newer Versions
-When Foxit releases a new version:
-1. Update the `$varVersion` variable (around line 395)
-2. Update the `$varVersionShort` calculation if version format changes
-3. Test on a single device before mass deployment
-4. Verify certificate thumbprint hasn't changed
+### Automatic Version Updates
+The script automatically downloads the latest stable version via Foxit's redirect URL:
+- No manual version updates needed
+- Always gets the newest release
+- Test on a pilot group before mass deployment if concerned about new versions
 
 ### Logging
 Installation logs are created at: `$PWD\foxit-editor.log`
@@ -189,10 +183,15 @@ This script, like all Datto RMM Component scripts unless otherwise explicitly st
 
 ## Version History
 
+### Build 2/2025 (November 2025)
+- **SIMPLIFIED**: Removed architecture detection complexity - defaults to 64-bit only
+- **SIMPLIFIED**: Uses Foxit's redirect URL to always download latest version automatically
+- No more hardcoded version numbers to maintain
+- Streamlined deployment for modern Windows environments
+
 ### Build 1/2025 (November 2025)
 - Initial conversion from Foxit Reader to Foxit PDF Editor
 - Added SSO activation support and instructions
-- Updated for 2025.2.0 release
 - Enhanced documentation and error handling
 - Added support for legacy PhantomPDF installations
 

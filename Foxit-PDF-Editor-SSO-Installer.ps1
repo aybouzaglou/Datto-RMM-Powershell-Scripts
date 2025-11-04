@@ -1,8 +1,13 @@
-<# foxit pdf editor downloader :: build 1/2025, november 2025
+<# foxit pdf editor downloader :: build 2/2025, november 2025
    script variables: usrAction/sel (install/upgrade/uninstall) :: @usrFoxitKillSITE/Bln
 
    CONVERTED FROM: Foxit Reader Component Script
-   PURPOSE: Downloads and installs Foxit PDF Editor for SSO activation by end users
+   PURPOSE: Downloads and installs Foxit PDF Editor (latest version, 64-bit) for SSO activation
+
+   SIMPLIFIED APPROACH:
+   - Always downloads latest stable version (no hardcoded version numbers)
+   - Defaults to 64-bit (modern deployment standard - it's 2025)
+   - Uses Foxit's redirect URL for automatic version updates
 
    SSO ACTIVATION NOTE:
    This script installs Foxit PDF Editor silently. Users must complete SSO activation
@@ -260,33 +265,9 @@ if ($($arrLang["$varLCID"].code)) {
 
 #region Architecture logic -------------------------------------------------------------------------------------
 
-if ($env:usrAction -eq 'Upgrade') {
-    if (([IntPtr]::size) -ne 4) {
-        $varArch=64
-        write-host "- Architecture: 64-bit"
-        write-host "  [Upgrade mode]: 64-bit package will be used to update from"
-    } else {
-        $varArch=86
-        write-host "- Architecture: 32-bit"
-        write-host "  [Upgrade mode]: 32-bit package will be used to update from"
-    }
-} else {
-    #assume "install@x86" until told otherwise
-    $varArch=86
-    if (([IntPtr]::size) -ne 4) {
-        write-host "- Architecture: 64-bit"
-        # Check registry for existing installation architecture
-        if ((gp "HKLM:\Software\Foxit Software\Foxit PDF Editor" -ea 0).bWin64Installer -eq 1) {
-            write-host "  [Install mode] The 64-bit package will be used to update from"
-            $varArch=64
-        } elseif ((gp "HKLM:\Software\Foxit Software\Foxit PhantomPDF" -ea 0).bWin64Installer -eq 1) {
-            write-host "  [Install mode] The 64-bit package will be used to update from (PhantomPDF)"
-            $varArch=64
-        } else {
-            write-host "  [Install mode] The 32-bit package will be used to update from"
-        }
-    }
-}
+# Modern Windows deployments: default to 64-bit (it's 2025, 32-bit is legacy)
+$varArch = 64
+write-host "- Architecture: 64-bit (default for modern deployments)"
 
 #region Clash detection ----------------------------------------------------------------------------------------
 
@@ -317,40 +298,29 @@ if ($varProcesses -contains 'FoxitPDFEditor' -or $varProcesses -contains 'FoxitP
 #region Download -----------------------------------------------------------------------------------------------
 
 <#
-    FOXIT PDF EDITOR DOWNLOAD NOTES (November 2025):
+    FOXIT PDF EDITOR DOWNLOAD NOTES:
 
-    Foxit PDF Editor (formerly PhantomPDF) uses CDN-based distribution similar to Foxit Reader.
-    Download URL pattern: https://cdn01.foxitsoftware.com/product/phantomPDF/desktop/win/[VERSION]/FoxitPDFEditor[VERSION]_L10N_Setup_Prom_x[ARCH].exe
-
-    Latest verified version: 2025.2.0
-    Example URL: https://cdn01.foxitsoftware.com/product/phantomPDF/desktop/win/2025.2.0/FoxitPDFEditor20252_L10N_Setup_Prom_x64.exe
-
-    This script uses the direct CDN download approach for reliability in enterprise environments.
-    The "Prom" (promotional) version is used as it's the standard distribution format and compatible
-    with existing installations. Silent installation skips any promotional content.
+    Using Foxit's redirect URL to always download the latest version automatically.
+    This eliminates the need to hardcode version numbers - the script always gets the newest release.
 
     SSO ACTIVATION:
-    Unlike traditional license key activation, SSO requires user interaction on first launch:
+    SSO requires user interaction on first launch:
     1. User opens Foxit PDF Editor
     2. Clicks "Activate" > "Sign In" > "SSO Login"
     3. Enters organizational email address
     4. Completes authentication through identity provider
 
-    SSO must be pre-configured in Foxit Admin Console by IT administrators before deployment.
+    SSO must be pre-configured in Foxit Admin Console by IT administrators.
 #>
 
 write-host `r
-write-host "- Downloading Foxit PDF Editor..."
+write-host "- Downloading Foxit PDF Editor (latest version)..."
 
-# Construct download URL - using latest stable version 2025.2.0
-# Version format: YYYY.M.P where M = month/major, P = patch
-# Installer format uses YYYYM (year + major, drops patch): 2025.2.0 → "20252"
-$varVersion = "2025.2.0"
-$versionParts = $varVersion -split '\.'
-$varVersionShort = "$($versionParts[0])$($versionParts[1])"  # e.g., "2025" + "2" = "20252"
-$varLink = "https://cdn01.foxitsoftware.com/product/phantomPDF/desktop/win/$varVersion/FoxitPDFEditor${varVersionShort}_L10N_Setup_Prom_x$varArch.exe"
+# Use Foxit's redirect to always get the latest version (similar to Reader approach)
+# The redirect URL automatically serves the newest stable release
+$varShortLink = "https://www.foxit.com/downloads/latest.html?product=Foxit-PDF-Editor&platform=Windows&version=&package_type=&language=English&distID="
+$varLink = ($varShortLink | getShortlink) -replace 'x64|x86',"x$varArch"
 
-write-host "- Download URL: $varLink"
 $varLink | downloadFile -whitelist "https://cdn01.foxitsoftware.com" -filename "foxitEditor.exe"
 verifyPackage "foxitEditor.exe" "DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA1" "7B0F360B775F76C94A12CA48445AA2D2A875701C" "Foxit PDF Editor" "https://cdn01.foxitsoftware.com"
 write-host `r
