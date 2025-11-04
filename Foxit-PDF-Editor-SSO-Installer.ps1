@@ -314,14 +314,14 @@ if ($varProcesses -contains 'FoxitPDFEditor' -or $varProcesses -contains 'FoxitP
 #>
 
 write-host `r
-write-host "- Downloading Foxit PDF Editor (latest version)..."
+write-host "- Downloading Foxit PDF Editor+ (2025 Subscription Version)..."
 
-# Use Foxit's redirect to always get the latest version (similar to Reader approach)
-# The redirect URL automatically serves the newest stable release
-$varShortLink = "https://www.foxit.com/downloads/latest.html?product=Foxit-PDF-Editor&platform=Windows&version=&package_type=&language=English&distID="
-$varLink = ($varShortLink | getShortlink) -replace 'x64|x86',"x$varArch"
+# Use Foxit's cloud API to download PDF Editor+ (subscription version with 2025.x numbering)
+# This is the correct version for SSO activation
+$varLink = "https://pheecws-na2.foxit.com/cpdfapi/v1/app/download?product=Foxit-PDF-Editor-Suite-Pro-Teams&version=&language=ML&arch=x$varArch&package=exe"
 
-$varLink | downloadFile -whitelist "https://cdn01.foxitsoftware.com" -filename "foxitEditor.exe"
+write-host "- Product: PDF Editor+ (Subscription/SSO compatible)"
+$varLink | downloadFile -whitelist "https://pheecws-na2.foxit.com" -filename "foxitEditor.exe"
 verifyPackage "foxitEditor.exe" "DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA1" "7B0F360B775F76C94A12CA48445AA2D2A875701C" "Foxit PDF Editor" "https://cdn01.foxitsoftware.com"
 write-host `r
 
