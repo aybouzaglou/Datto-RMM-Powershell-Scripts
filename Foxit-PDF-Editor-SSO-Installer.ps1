@@ -344,8 +344,10 @@ write-host "- Downloading Foxit PDF Editor..."
 
 # Construct download URL - using latest stable version 2025.2.0
 # Version format: YYYY.M.P where M = month/major, P = patch
+# Installer format uses YYYYM (year + major, drops patch): 2025.2.0 → "20252"
 $varVersion = "2025.2.0"
-$varVersionShort = $varVersion -replace '\.',''  # "202520"
+$versionParts = $varVersion -split '\.'
+$varVersionShort = "$($versionParts[0])$($versionParts[1])"  # e.g., "2025" + "2" = "20252"
 $varLink = "https://cdn01.foxitsoftware.com/product/phantomPDF/desktop/win/$varVersion/FoxitPDFEditor${varVersionShort}_L10N_Setup_Prom_x$varArch.exe"
 
 write-host "- Download URL: $varLink"

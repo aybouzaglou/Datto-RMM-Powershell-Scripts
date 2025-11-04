@@ -132,9 +132,10 @@ The original script supported the `usrFoxitKeySITE` variable for traditional lic
 
 ### Different Version Needed
 **Cause**: Script uses hardcoded version 2025.2.0
-**Solution**: Edit line ~395 in script to change version:
+**Solution**: Edit line ~348 in script to change version:
 ```powershell
-$varVersion = "2025.2.0"  # Change to desired version
+$varVersion = "2025.2.0"  # Change to desired version (format: YYYY.M.P)
+# Note: Installer names use YYYYM format (e.g., 2025.2.0 → "20252")
 ```
 
 ## Security Considerations
