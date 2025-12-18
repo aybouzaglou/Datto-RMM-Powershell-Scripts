@@ -5,7 +5,7 @@
 ### Repository Structure
 ```
 ├── shared-functions/    # Function patterns to copy/paste
-├── components/         # Self-contained scripts by type
+├── components/         # Scripts (embedded functions or modules)
 └── docs/              # Documentation
 ```
 

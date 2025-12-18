@@ -1,43 +1,42 @@
 <#
 .SYNOPSIS
-Self-Contained Application Template - Direct Deployment
+    Application Template - Direct Deployment
 
 .DESCRIPTION
-Template for creating self-contained application deployment scripts with embedded functions.
-Optimized for direct deployment to Datto RMM Applications components.
-
-Features:
-- All functions embedded directly in script
-- No external dependencies during execution
-- Comprehensive error handling and logging
-- File attachment support for installers
-- Registry-based software detection
-- PowerShell 5.0+ compatible
+    Template for creating application deployment scripts.
+    Supports embedded functions or standard module patterns.
+    
+    Features:
+    - Flexible function management (embed or import)
+    - Comprehensive error handling and logging
+    - File attachment support for installers
+    - Registry-based software detection
+    - PowerShell 5.0+ compatible
 
 .COMPONENT
-Category: Applications (Software Deployment)
-Execution: On-demand or scheduled
-Timeout: Up to 30 minutes
-Changeable: Yes (can be changed to Scripts category if needed)
+    Category: Applications (Software Deployment)
+    Execution: On-demand or scheduled
+    Timeout: Up to 30 minutes
+    Changeable: Yes (can be changed to Scripts category if needed)
 
 .ENVIRONMENT VARIABLES
-- SoftwareName (String): Name of software to install/check
-- InstallerFile (String): Name of installer file (if using file attachment)
-- InstallArgs (String): Installation arguments (default: "/S /silent")
-- ForceReinstall (Boolean): Force reinstall if already installed (default: false)
+    - SoftwareName (String): Name of software to install/check
+    - InstallerFile (String): Name of installer file (if using file attachment)
+    - InstallArgs (String): Installation arguments (default: "/S /silent")
+    - ForceReinstall (Boolean): Force reinstall if already installed (default: false)
 
 .EXAMPLES
-Environment Variables:
-SoftwareName = "Adobe Reader"
-InstallerFile = "AdobeReader.exe"
-InstallArgs = "/S /silent /norestart"
-ForceReinstall = false
+    Environment Variables:
+    SoftwareName = "Adobe Reader"
+    InstallerFile = "AdobeReader.exe"
+    InstallArgs = "/S /silent /norestart"
+    ForceReinstall = false
 
 .NOTES
-Version: 1.0.0
-Author: Datto RMM Self-Contained Architecture
-Compatible: PowerShell 5.0+, Datto RMM Environment
-Deployment: DIRECT (paste script content directly into Datto RMM)
+    Version: 1.0.0
+    Author:         Datto RMM Script
+    Compatible:     PowerShell 5.0+, Datto RMM Environment
+    Deployment:     Direct to Datto RMM
 #>
 
 param(
@@ -57,24 +56,24 @@ param(
 # Embedded logging function
 function Write-RMMLog {
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [AllowEmptyString()]
         [string]$Message,
         
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateSet('Info', 'Status', 'Success', 'Warning', 'Error', 'Failed', 'Config', 'Detect')]
         [string]$Level = 'Info'
     )
     
     $prefix = switch ($Level) {
         'Success' { 'SUCCESS ' }
-        'Failed'  { 'FAILED  ' }
-        'Error'   { 'ERROR   ' }
+        'Failed' { 'FAILED  ' }
+        'Error' { 'ERROR   ' }
         'Warning' { 'WARNING ' }
-        'Status'  { 'STATUS  ' }
-        'Config'  { 'CONFIG  ' }
-        'Detect'  { 'DETECT  ' }
-        default   { 'INFO    ' }
+        'Status' { 'STATUS  ' }
+        'Config' { 'CONFIG  ' }
+        'Detect' { 'DETECT  ' }
+        default { 'INFO    ' }
     }
     
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -128,7 +127,8 @@ function Test-SoftwareInstalled {
                     return $true
                 }
             }
-        } catch {
+        }
+        catch {
             Write-RMMLog "Error checking registry path $RegPath`: $($_.Exception.Message)" -Level Warning
         }
     }
@@ -183,7 +183,8 @@ function Install-Software {
                 return $exitCode
             }
         }
-    } catch {
+    }
+    catch {
         Write-RMMLog "Error during installation: $($_.Exception.Message)" -Level Error
         return 1
     }
@@ -199,14 +200,14 @@ if (-not (Test-Path $LogPath)) {
     New-Item -Path $LogPath -ItemType Directory -Force | Out-Null
 }
 
-Start-Transcript -Path "$LogPath\SelfContainedApplication-$(Get-Date -Format 'yyyyMMdd-HHmmss').log" -Append
+Start-Transcript -Path "$LogPath\Application-$(Get-Date -Format 'yyyyMMdd-HHmmss').log" -Append
 
 Write-RMMLog "=============================================="
-Write-RMMLog "Self-Contained Application Template v1.0.0" -Level Status
+Write-RMMLog "Application Deployment Template v1.0.0" -Level Status
 Write-RMMLog "=============================================="
 Write-RMMLog "Component Category: Applications (Software Deployment)" -Level Config
 Write-RMMLog "Start Time: $(Get-Date)" -Level Config
-Write-RMMLog "Functions: Embedded (self-contained)" -Level Config
+Write-RMMLog "Functions: Flexible (Embedded/Imported)" -Level Config
 Write-RMMLog ""
 
 # Process environment variables
@@ -233,24 +234,28 @@ try {
         Write-RMMLog "$SoftwareName is already installed" -Level Status
         Write-RMMLog "Skipping installation - software already present" -Level Success
         $exitCode = 0
-    } else {
+    }
+    else {
         if ($isInstalled -and $ForceReinstall) {
             Write-RMMLog "$SoftwareName is installed but ForceReinstall is enabled" -Level Status
-        } else {
+        }
+        else {
             Write-RMMLog "$SoftwareName not installed - proceeding with installation" -Level Status
         }
         
         $exitCode = Install-Software -InstallerFile $InstallerFile -InstallArgs $InstallArgs
     }
     
-} catch {
+}
+catch {
     Write-RMMLog "Unexpected error during execution: $($_.Exception.Message)" -Level Error
     Write-RMMLog "Stack trace: $($_.ScriptStackTrace)" -Level Error
     $exitCode = 1
-} finally {
+}
+finally {
     Write-RMMLog ""
     Write-RMMLog "=============================================="
-    Write-RMMLog "Self-Contained Application deployment completed" -Level Status
+    Write-RMMLog "Application deployment completed" -Level Status
     Write-RMMLog "Final exit code: $exitCode" -Level Status
     Write-RMMLog "End Time: $(Get-Date)" -Level Status
     Write-RMMLog "=============================================="

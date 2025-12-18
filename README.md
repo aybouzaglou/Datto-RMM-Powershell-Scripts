@@ -13,9 +13,14 @@ PowerShell scripts for Datto RMM with embedded functions for easy maintenance an
 | Deploy | Direct paste to RMM | [Deployment Guide](docs/Deployment-Guide.md) |
 | Download files | Modern patterns | [Download Best Practices](docs/Datto-RMM-Download-Best-Practices.md) |
 
-## Architecture
+## Key Features
 
-Scripts use embedded functions for maintainability and reliability. Each script is complete and deployable without pulling code from external sources.
+- **Flexible Architecture**: Support for both embedded functions and standard module imports.
+- **Direct Deployment**: Scripts are designed to be deployed directly to Datto RMM components.
+- **Standardized Logging**: Consistent logging using `Write-RMMLog` (or `Write-Host` for Monitors).
+
+### Architecture
+Scripts can use embedded functions for easy maintenance or standard PowerShell modules where appropriate.
 
 ```powershell
 # Example embedded function (copied from shared-functions/)

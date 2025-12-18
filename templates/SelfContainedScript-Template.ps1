@@ -1,42 +1,42 @@
 <#
 .SYNOPSIS
-Self-Contained Script Template - Direct Deployment
+    Script Template - Direct Deployment
 
 .DESCRIPTION
-Template for creating self-contained automation scripts with embedded functions.
-Optimized for direct deployment to Datto RMM Scripts components.
+    Template for creating automation scripts for Datto RMM.
+    Supports both embedded functions and module imports.
 
-Features:
-- All functions embedded directly in script
-- Comprehensive error handling and logging
-- Flexible timeout support
-- System state validation
-- PowerShell 5.0+ compatible
+    Features:
+    - Flexible function management (embed or import)
+    - Comprehensive error handling and logging
+    - Flexible timeout support
+    - System state validation
+    - PowerShell 5.0+ compatible
 
 .COMPONENT
-Category: Scripts (General Automation/Maintenance)
-Execution: On-demand or scheduled
-Timeout: Flexible (15 minutes recommended)
-Changeable: Yes (can be changed to Applications category if needed)
+    Category: Scripts (General Automation/Maintenance)
+    Execution: On-demand or scheduled
+    Timeout: Flexible (15 minutes recommended)
+    Changeable: Yes (can be changed to Applications category if needed)
 
 .ENVIRONMENT VARIABLES
-- OperationMode (String): Mode of operation (default: "Standard")
-- TargetPath (String): Target path for operations (default: "C:\Temp")
-- EnableLogging (Boolean): Enable detailed logging (default: true)
-- DryRun (Boolean): Perform dry run without making changes (default: false)
+    - OperationMode (String): Mode of operation (default: "Standard")
+    - TargetPath (String): Target path for operations (default: "C:\Temp")
+    - EnableLogging (Boolean): Enable detailed logging (default: true)
+    - DryRun (Boolean): Perform dry run without making changes (default: false)
 
 .EXAMPLES
-Environment Variables:
-OperationMode = "Advanced"
-TargetPath = "C:\CustomPath"
-EnableLogging = true
-DryRun = false
+    Environment Variables:
+    OperationMode = "Advanced"
+    TargetPath = "C:\CustomPath"
+    EnableLogging = true
+    DryRun = false
 
 .NOTES
-Version: 1.0.0
-Author: Datto RMM Self-Contained Architecture
-Compatible: PowerShell 5.0+, Datto RMM Environment
-Deployment: DIRECT (paste script content directly into Datto RMM)
+    Version: 1.0.0
+    Author:         Datto RMM Script
+    Compatible:     PowerShell 5.0+, Datto RMM Environment
+    Deployment:     Direct to Datto RMM
 #>
 
 param(
@@ -56,24 +56,24 @@ param(
 # Embedded logging function
 function Write-RMMLog {
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [AllowEmptyString()]
         [string]$Message,
         
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateSet('Info', 'Status', 'Success', 'Warning', 'Error', 'Failed', 'Config', 'Detect')]
         [string]$Level = 'Info'
     )
     
     $prefix = switch ($Level) {
         'Success' { 'SUCCESS ' }
-        'Failed'  { 'FAILED  ' }
-        'Error'   { 'ERROR   ' }
+        'Failed' { 'FAILED  ' }
+        'Error' { 'ERROR   ' }
         'Warning' { 'WARNING ' }
-        'Status'  { 'STATUS  ' }
-        'Config'  { 'CONFIG  ' }
-        'Detect'  { 'DETECT  ' }
-        default   { 'INFO    ' }
+        'Status' { 'STATUS  ' }
+        'Config' { 'CONFIG  ' }
+        'Detect' { 'DETECT  ' }
+        default { 'INFO    ' }
     }
     
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -118,12 +118,14 @@ function Invoke-RMMTimeout {
             $result = Receive-Job $job
             Remove-Job $job -Force
             return $result
-        } else {
+        }
+        else {
             Stop-Job $job -Force
             Remove-Job $job -Force
             throw "Operation '$OperationName' exceeded ${TimeoutSec}s timeout"
         }
-    } catch {
+    }
+    catch {
         Write-RMMLog "Timeout wrapper error for '$OperationName': $($_.Exception.Message)" -Level Failed
         throw
     }
@@ -137,7 +139,8 @@ function Test-SystemState {
     
     try {
         # Example system checks - customize as needed
-        $diskSpace = Get-WmiObject -Class Win32_LogicalDisk -Filter "DeviceID='C:'" | Select-Object -ExpandProperty FreeSpace
+        # Fixed: Changed Get-WmiObject to Get-CimInstance for modern PowerShell compliance
+        $diskSpace = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'" | Select-Object -ExpandProperty FreeSpace
         $freeSpaceGB = [math]::Round($diskSpace / 1GB, 2)
         
         if ($freeSpaceGB -lt 1) {
@@ -147,7 +150,8 @@ function Test-SystemState {
         
         Write-RMMLog "$Description validation passed - $freeSpaceGB GB free space" -Level Success
         return $true
-    } catch {
+    }
+    catch {
         Write-RMMLog "Error validating $Description`: $($_.Exception.Message)" -Level Error
         return $false
     }
@@ -190,7 +194,8 @@ function Invoke-CustomOperation {
         Write-RMMLog "Created file: $testFile" -Level Success
         
         return 0
-    } catch {
+    }
+    catch {
         Write-RMMLog "Error during custom operation: $($_.Exception.Message)" -Level Error
         return 1
     }
@@ -207,15 +212,15 @@ if (-not (Test-Path $LogPath)) {
 }
 
 if ($EnableLogging) {
-    Start-Transcript -Path "$LogPath\SelfContainedScript-$(Get-Date -Format 'yyyyMMdd-HHmmss').log" -Append
+    Start-Transcript -Path "$LogPath\Script-$(Get-Date -Format 'yyyyMMdd-HHmmss').log" -Append
 }
 
 Write-RMMLog "=============================================="
-Write-RMMLog "Self-Contained Script Template v1.0.0" -Level Status
+Write-RMMLog "Datto RMM Script Template v1.0.0" -Level Status
 Write-RMMLog "=============================================="
 Write-RMMLog "Component Category: Scripts (General Automation)" -Level Config
 Write-RMMLog "Start Time: $(Get-Date)" -Level Config
-Write-RMMLog "Functions: Embedded (self-contained)" -Level Config
+Write-RMMLog "Functions: Flexible (Embedded/Imported)" -Level Config
 Write-RMMLog ""
 
 # Process environment variables
@@ -240,7 +245,8 @@ try {
     if (-not (Test-SystemState -Description "Pre-Operation")) {
         Write-RMMLog "Pre-operation validation failed - aborting" -Level Error
         $exitCode = 1
-    } else {
+    }
+    else {
         # Execute main operation with timeout protection
         $exitCode = Invoke-RMMTimeout -Code {
             Invoke-CustomOperation -Mode $OperationMode -Path $TargetPath -DryRun $DryRun
@@ -256,14 +262,16 @@ try {
         }
     }
     
-} catch {
+}
+catch {
     Write-RMMLog "Unexpected error during execution: $($_.Exception.Message)" -Level Error
     Write-RMMLog "Stack trace: $($_.ScriptStackTrace)" -Level Error
     $exitCode = 1
-} finally {
+}
+finally {
     Write-RMMLog ""
     Write-RMMLog "=============================================="
-    Write-RMMLog "Self-Contained Script execution completed" -Level Status
+    Write-RMMLog "Script execution completed" -Level Status
     Write-RMMLog "Final exit code: $exitCode" -Level Status
     Write-RMMLog "End Time: $(Get-Date)" -Level Status
     Write-RMMLog "=============================================="

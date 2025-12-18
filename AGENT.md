@@ -1,300 +1,144 @@
 # AGENT.md
 
-This file provides guidance to WARP (warp.dev) when working with code in this repository.
+This file provides valid guidance to AI agents (including rules for .cursorrules, .windsurf/rules, etc.) when working with code in this repository.
 
-## Repository Overview
+## 🤖 AI Agent Responsibilities
 
-This is a **Datto RMM PowerShell Scripts** repository containing PowerShell scripts for Datto RMM with embedded functions. Scripts are designed for direct deployment to Datto RMM components without needing to pull code from external sources.
+You are responsible for maintaining the high quality and reliability of the Datto RMM PowerShell Scripts repository. Valid scripts can be either self-contained (embedded functions) or modular (importing dependencies), depending on the specific needs of the task.
 
-## Key Architecture Principles
+### 🌟 Core Principles
 
-### Embedded Functions Design
-- **Functions are copied from shared-functions/ library and embedded in each script** (for maintainability)
-- **Create custom functions** when shared functions don't meet your needs
-- **Use Import-Module** when appropriate for standard PowerShell modules
-- **Download installers/resources** from vendors as needed
-- **Avoid launcher scripts** that pull other scripts from external sources (GitHub wikis, etc.)
-- Scripts are copied from `components/` and pasted directly into Datto RMM to create components
+1.  **Strict Linting**: All scripts must pass `PSScriptAnalyzer` checks defined in `PSScriptAnalyzerSettings.psd1`.
+2.  **Standardized Output**: Logs must be parseable. Use the `Write-RMMLog` standard.
+3.  **Safety First**: Always validate system state, handling timeouts and errors gracefully.
+4.  **Dependencies**: While self-contained scripts are preferred for reliability, you **MAY** use `Import-Module` or external dependencies if the task requires it or if it significantly simplifies maintainability.
 
-### Direct Deployment Model
-- Copy entire script content from `components/` directory
-- Paste directly into Datto RMM component interface
-- Configure environment variables as needed
-- Deploy to target devices
+---
 
-## Common Development Commands
+## 📁 Repository Architecture
 
-### Script Development Workflow
-```bash
-# Create new script with proper branching and templates
-./scripts/new-script-workflow.ps1 -ScriptName "MyScript" -ScriptType "Script" -Action "new"
+-   **`components/`**: The source of truth for all scripts.
+    -   `Applications/`: Long-running software deployments (up to 30 mins).
+    -   `Scripts/`: General automation tasks.
+    -   `Monitors/`: Fast diagnostic checks (<200ms target).
+-   **`shared-functions/`**: The library of approved functions.
+    -   **Rule**: Do not write custom logic if a shared function exists. Copy the function from here into the script.
+-   **`templates/`**: References for new scripts.
+    -   *Always* check these templates before starting a new file.
 
-# Validate scripts before pushing
-./scripts/validate-before-push.ps1 -Quick    # Syntax + critical checks
-./scripts/validate-before-push.ps1 -Full     # Comprehensive validation
+---
 
-# Install git hooks for validation
-./scripts/install-git-hooks.ps1
-```
+## 📝 Coding Standards
 
-### Testing Scripts Locally
+### 1. Metadata Headers (Required)
+Every script MUST start with a standard comment block containing the following metadata.
+
 ```powershell
-# Test syntax validation for all scripts
-Get-ChildItem -Filter "*.ps1" -Recurse | ForEach-Object {
-    try {
-        $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $_.FullName -Raw), [ref]$null)
-        Write-Host "✅ $($_.Name)" -ForegroundColor Green
-    } catch {
-        Write-Host "❌ $($_.Name): $($_.Exception.Message)" -ForegroundColor Red
-    }
-}
+<#
+.SYNOPSIS
+    Short description of the script's purpose.
 
-# Run PSScriptAnalyzer on a specific script
-Invoke-ScriptAnalyzer -Path "components/Scripts/MyScript.ps1" -Severity Error
+.DESCRIPTION
+    Detailed explanation of what the script does, including requirements and edge cases.
+
+.COMPONENT
+    Category=Scripts ; Level=Medium(3) ; Timeout=300s ; Build=1.0.0
+
+.INPUTS
+    Variable1(Type) ; Variable2(Type)
+
+.REQUIRES
+    LocalSystem ; PSVersion >=5.0
+#>
 ```
 
-### Working with Templates
-```powershell
-# Copy template for new application script
-Copy-Item "templates/SelfContainedApplication-Template.ps1" "components/Applications/MyApp.ps1"
+### 2. Embedded Functions vs Modules
+You should generally prefer embedding functions for simple tasks to ensure the script runs identically on all endpoints. However, if a standard PowerShell module is available or if the script logic is complex and better managed via a module, **you may use `Import-Module`**.
 
-# Copy template for new monitor
-Copy-Item "templates/DirectDeploymentMonitor-Template.ps1" "components/Monitors/MyMonitor.ps1"
-```
-
-## Architecture Overview
-
-### Directory Structure
-```
-components/
-├── Applications/    # Software deployment scripts (up to 30 min timeout)
-├── Scripts/         # General automation scripts (flexible timeout)  
-└── monitors/        # System monitoring scripts (<200ms target)
-
-shared-functions/    # Function patterns to copy into scripts
-├── Core/           # Essential functions (RMMLogging, RMMValidation, etc.)
-└── Utilities/      # Helper functions (FileOperations, NetworkUtils, etc.)
-
-templates/          # Script templates for different component types
-docs/              # Documentation and best practices
-scripts/           # Development workflow helpers
-```
-
-### Component Categories
-- **Applications**: Software deployment/management, up to 30 minutes execution, changeable category
-- **Scripts**: General automation/maintenance, flexible timeout, changeable category  
-- **Monitors**: System health monitoring, <200ms execution target, diagnostic-first architecture
-
-### Embedded Function Architecture
-Instead of importing functions, copy needed functions from `shared-functions/` into your script:
+If you choose to embed, read the content of the required function from `shared-functions/` and embed it into the script region marked:
 
 ```powershell
 ############################################################################################################
 #                                    EMBEDDED FUNCTION LIBRARY                                            #
 ############################################################################################################
 
-function Write-RMMLog {
-    param([string]$Message, [string]$Level = 'Info')
-    $prefix = switch ($Level) {
-        'Success' { 'SUCCESS ' }
-        'Failed'  { 'FAILED  ' }
-        'Warning' { 'WARNING ' }
-        default   { 'INFO    ' }
-    }
-    Write-Output "$prefix$Message"
-}
-
-# ... other embedded functions ...
-
-############################################################################################################
-#                                    MAIN SCRIPT LOGIC                                                    #
-############################################################################################################
-
-# Your script logic here
+# [Paste content of shared-functions/Core/RMMLogging.ps1 here]
+# [Paste content of shared-functions/Core/RMMValidation.ps1 here]
 ```
 
-## Monitor Development Patterns
+### 3. Variable Handling (`Get-RMMVariable`)
+Always use the standard `Get-RMMVariable` function (copied from `RMMValidation.ps1`) to safely retrieve environment variables.
 
-### Critical Requirements for Monitors
-- **Execution time**: Target <200ms, maximum 3 seconds
-- **Output method**: Use `Write-Host` for ALL output (never mix with `Write-Output`)
-- **Result markers**: Required for proper RMM integration
-- **Direct deployment only**: No launchers for performance reasons
-
-### Monitor Output Contract (Required)
-- Use Write-Host only
-- Single diagnostic block: "<-Start Diagnostic->" ... "<-End Diagnostic->"
-- Single result block: "<-Start Result->" then exactly one line beginning with "Status=", then "<-End Result->"
-- Exit code 0 for OK, non-zero for alert
-
-### Monitor Template Pattern
 ```powershell
-# Diagnostic phase
-Write-Host '<-Start Diagnostic->'
-Write-Host "Monitor Name: Performing system checks..."
-Write-Host "- Checking system state..."
+# ✅ Correct
+$TargetFile = Get-RMMVariable -Name "TargetFile" -Required
 
-# ... diagnostics here ...
+# ❌ Incorrect
+$TargetFile = $env:TargetFile
+```
 
-# Do NOT end result here. Close diagnostics just before writing results
+### 4. Logging Standards (`Write-RMMLog`)
+Use `Write-RMMLog` for all output (except Monitors). This ensures RMM can parse the logs.
 
-# Result phase (single line result)
-Write-Host '<-End Diagnostic->'
-Write-Host '<-Start Result->'
-if ($healthy) {
-    Write-Host "Status=OK: System is healthy"
+-   **Patterns**:
+    -   `Write-RMMLog "Starting backup..." -Level Status`
+    -   `Write-RMMLog "File not found" -Level Failed`
+    -   `Write-RMMLog "Disk space: 50GB" -Level Metric`
+
+### 5. Monitor Specifics
+Monitors have a strict contract and CANNOT use `Write-RMMLog`.
+-   **Must use**: `Write-Host` exactly.
+-   **Structure**:
+    ```powershell
+    Write-Host "<-Start Diagnostic->"
+    Write-Host "Checking service status..."
+    Write-Host "<-End Diagnostic->"
+    
+    Write-Host "<-Start Result->"
+    Write-Host "Status=OK: Service is running"
+    Write-Host "<-End Result->"
     exit 0
-} else {
-    Write-Host "Status=CRITICAL: Issue detected"
-    exit 1
-}
-Write-Host '<-End Result->'
-```
+    ```
 
-### Centralized Result Helpers (Recommended)
+---
+
+## 🔍 Validation & Linting
+
+### PSScriptAnalyzer
+Run analysis on every script change.
 ```powershell
-function Write-MonitorAlert {
-  param([string]$Message)
-  Write-Host '<-End Diagnostic->'
-  Write-Host '<-Start Result->'
-  Write-Host "Status=$Message"
-  Write-Host '<-End Result->'
-  exit 1
-}
-
-function Write-MonitorSuccess {
-  param([string]$Message)
-  Write-Host '<-End Diagnostic->'
-  Write-Host '<-Start Result->'
-  Write-Host "Status=$Message"
-  Write-Host '<-End Result->'
-  exit 0
-}
+Invoke-ScriptAnalyzer -Path "components/Scripts/MyScript.ps1" -Settings "PSScriptAnalyzerSettings.psd1"
 ```
 
-### Centralized Alert Functions
-```powershell
-function Write-MonitorAlert {
-    param([string]$Message)
-    Write-Host '<-End Diagnostic->'
-    Write-Host '<-Start Result->'
-    Write-Host "X=$Message"
-    Write-Host '<-End Result->'
-    exit 1
-}
-```
+**Common Fixes**:
+-   **Global Variables**: Allowed only for standard counters (`$Global:RMMSuccessCount`). use `$script:` scope otherwise.
+-   **Empty Catch Blocks**: Forbidden. Always comment why an error is ignored:
+    ```powershell
+    catch {
+        # Ignored because file might strict not exist yet
+        $null = $_
+    }
+    ```
+-   **Cmdlet Aliases**: Do not use `gwmi`, `gc`, etc. Use full names `Get-WmiObject`, `Get-Content`.
 
-## AI Agent Guidelines
+### PowerShell Versions
+Scripts must support **PowerShell 5.0+**. Avoid syntax introduced in PowerShell 7 (like ternary operators `? :` or `||`) unless you explicitly check the version first.
 
-### Communication & Formatting Rules
-When generating implementation plans, walkthroughs, or messages, follow these formatting rules to ensure compatibility with the user's environment:
+---
 
-- **File Link Rules**:
-    - **Absolute Paths**: Always use absolute paths with the `file:///` scheme.
-    - **No Backticks in Links**: Do not surround the link text with backticks, as it breaks the clickable link formatting in some UIs.
-        - ✅ Correct: `[clear-efi-partition.ps1](file:///path/to/script.ps1)`
-        - ❌ Incorrect: `[\`clear-efi-partition.ps1\`](file:///path/to/script.ps1)`
-    - **Line References**: Use `#L123-L145` at the end of the URL for line ranges.
+## 🛠 Workflow for Agents
 
-- **Artifact Usage**:
-    - Create `implementation_plan.md` for approval before execution.
-    - Create `walkthrough.md` to document results and provide proof of work.
-    - Use `task.md` to track progress through complex tasks.
+1.  **Read**: Analyze the user request.
+2.  **Plan**: Check `templates/` and `shared-functions/`. Decide which functions to embed.
+3.  **Draft**: Write the script in `components/Category/Name.ps1`.
+4.  **Embed**: Copy function definitions from `shared-functions/` into the script.
+    -   *Agent Tip*: You can assume `RMMLogging.ps1` and `RMMValidation.ps1` are always needed.
+5.  **Validate**: Run `Invoke-ScriptAnalyzer`. Fix all Warnings/Errors.
+6.  **Verify**: Ensure no absolute paths to the user's machine are hardcoded (use system variables).
 
-### Lint Rules (PSScriptAnalyzer)
-Future AI models must ensure all code complies with the repository's linting standards defined in [PSScriptAnalyzerSettings.psd1](file:///Users/avrahambouzaglou/Documents/Powershell Repo/Datto-RMM-Powershell-Scripts/PSScriptAnalyzerSettings.psd1).
+## 🚫 "Do Not" List
 
-**Strict Requirements**:
-- **Scoped Variables**: Use `$script:` or local variables instead of `$global:`.
-- **Modern Cmdlets**: Use `Get-CimInstance` instead of `Get-WmiObject`.
-- **Doc'd Error Handling**: Never use empty `catch` blocks. Use `$null = $_` and a comment to explicitly ignore expected errors.
-- **RMM Logging**: Follow the established prefix pattern (`SUCCESS`, `FAILED`, `STATUS`, `METRIC`, etc.) for all output.
-
-### PowerShell Coding Standards for AI
-- **No += with Arrays**: Use `[System.Collections.Generic.List[object]]::new()`.
-- **RMM Output Method**: Monitors MUST use `Write-Host` for diagnostic/result blocks.
-- **Admin Check**: Include administrative privilege checks for scripts requiring system-level changes.
-
-## Critical Development Rules
-
-### Array Handling (Critical PowerShell Pitfall)
-**Never use `+=` with arrays in loops - use Generic Lists instead:**
-
-```powershell
-# ❌ WRONG - Unreliable due to scoping issues
-$foundItems = @()
-Get-ChildItem | ForEach-Object {
-    $foundItems += $_  # May result in empty array
-}
-
-# ✅ CORRECT - Always reliable
-$foundItems = [System.Collections.Generic.List[object]]::new()
-Get-ChildItem | ForEach-Object {
-    $foundItems.Add($_)  # Always works correctly
-}
-```
-
-### Error Handling Best Practices
-- Use global try-catch around entire script
-- Handle non-critical errors gracefully (continue execution)
-- Only terminate on critical errors (missing required files, permissions)
-- Use robust logging functions that handle edge cases
-
-### Launcher Cache Standards
-- **Use 5 minutes or less** for all cache timeouts
-- **Always try download first** - use cache only as fallback
-- Avoid long cache times (60+ minutes) that cause stale script issues
-
-## Validation and Quality Standards
-
-### Banned Operations in Datto RMM
-- `Get-WmiObject Win32_Product` - Use registry-based detection instead
-- `Get-CimInstance Win32_Product` - Performance issues
-- Interactive elements: `Read-Host`, `Get-Credential`, Windows Forms
-- Mixed output methods in monitors
-
-### PSScriptAnalyzer Rules
-Scripts must pass PSScriptAnalyzer validation with no critical errors:
-```powershell
-Invoke-ScriptAnalyzer -Path "script.ps1" -Severity Error
-```
-
-### File Attachments
-For Applications requiring installer files:
-- Use Datto RMM's file attachment feature
-- Reference files by name only (e.g., `"installer.msi"`)
-- Files automatically available in working directory
-
-## Documentation References
-
-Key documentation files in the repository:
-- `docs/Function-Reference.md` - Complete function library with examples
-- `docs/Deployment-Guide.md` - Step-by-step deployment instructions
-- `docs/Monitor-Development-Guidelines.md` - Monitor-specific best practices
-- `docs/Datto-RMM-Download-Best-Practices.md` - Modern download patterns
-
-## Development Workflow
-
-1. **Create feature branch**: Use `new-script-workflow.ps1` for proper branching
-2. **Copy functions**: Embed needed functions from `shared-functions/` 
-3. **Validate locally**: Run `validate-before-push.ps1` before committing
-4. **Test deployment**: Test on development devices before production
-5. **Monitor performance**: Especially for monitors (<200ms target)
-
-## Environment Variables
-
-Scripts use Datto RMM environment variables for configuration:
-```powershell
-# Example patterns for environment variable handling
-$CustomPath = Get-RMMVariable -Name "CustomPath" -Default "C:\Temp"
-$EnableDebug = Get-RMMVariable -Name "EnableDebug" -Type "Boolean" -Default $false
-$Timeout = Get-RMMVariable -Name "Timeout" -Type "Integer" -Default 300
-```
-
-## Deployment Method
-
-**All components use direct deployment:**
-1. Copy entire script content from `components/` directory
-2. Paste directly into Datto RMM component interface  
-3. Set environment variables as needed in RMM interface
-4. Save and deploy to target devices
+-   **DO NOT** use `Write-Host` in non-Monitor scripts (use `Write-RMMLog` or `Write-Output`).
+-   **DO NOT** use `+=` for arrays (use `[System.Collections.Generic.List[Object]]::new()`).
+-   **DO NOT** create "launcher" scripts that download code from GitHub.
+-   **DO NOT** use `Read-Host` (scripts run headless).

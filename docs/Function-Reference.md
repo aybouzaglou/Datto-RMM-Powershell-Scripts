@@ -542,4 +542,4 @@ Write-Output $foundItems.Count # Correctly returns the number of items
 - Use `-UpdateCounters $false` in monitor logging functions to avoid counter overhead
 - Launcher cache timeouts should be 5 minutes or less for all environments
 - ⚠️ **DEPRECATED**: Cache system (modern scripts embed functions directly)
-- ⚠️ **DEPRECATED**: Offline mode (modern scripts are self-contained)
+- ⚠️ **DEPRECATED**: Offline mode

@@ -7,13 +7,12 @@ Embedded Monitor Functions - COPY/PASTE Reference Library for Direct Deployment
 DO NOT import, dot-source, or create dependencies on this file.
 
 🎯 PURPOSE: Provide tried-and-true function patterns for monitor development
-📊 PERFORMANCE: Optimized for <200ms execution times with zero external dependencies
-🔒 DEPLOYMENT: Self-contained monitors only - no network dependencies
+📊 PERFORMANCE: Optimized for <200ms execution times
+🔒 DEPLOYMENT: Direct deployment recommended for maximum reliability
 
 .ARCHITECTURE PHILOSOPHY
-- Monitors must be 100% self-contained for maximum reliability
+- Embedding functions avoids dependency issues
 - Copy these functions directly into your monitor scripts
-- No external dependencies, no network calls, no shared function imports
 - Proven patterns that work reliably in Datto RMM environment
 
 .USAGE INSTRUCTIONS
@@ -187,7 +186,8 @@ function Test-RMMEnvironment {
         }
         
         return $true
-    } catch {
+    }
+    catch {
         return $false
     }
 }
@@ -217,12 +217,13 @@ function Get-RMMDiskSpace {
     try {
         $drive = Get-PSDrive $DriveLetter -ErrorAction Stop
         return @{
-            FreeGB = [math]::Round($drive.Free / 1GB, 1)
-            UsedGB = [math]::Round($drive.Used / 1GB, 1)
-            TotalGB = [math]::Round(($drive.Used + $drive.Free) / 1GB, 1)
+            FreeGB      = [math]::Round($drive.Free / 1GB, 1)
+            UsedGB      = [math]::Round($drive.Used / 1GB, 1)
+            TotalGB     = [math]::Round(($drive.Used + $drive.Free) / 1GB, 1)
             FreePercent = [math]::Round(($drive.Free / ($drive.Used + $drive.Free)) * 100, 1)
         }
-    } catch {
+    }
+    catch {
         return $null
     }
 }
@@ -247,7 +248,8 @@ function Test-RMMService {
     try {
         $service = Get-Service $ServiceName -ErrorAction Stop
         return $service.Status -eq 'Running'
-    } catch {
+    }
+    catch {
         return $false
     }
 }
@@ -272,7 +274,8 @@ function Test-RMMProcess {
     try {
         $process = Get-Process $ProcessName -ErrorAction Stop
         return $process.Count -gt 0
-    } catch {
+    }
+    catch {
         return $false
     }
 }
@@ -346,7 +349,8 @@ function Test-MonitorSoftware {
                                     $foundDetails += "User-Level ($userContext): $($app.DisplayName)"
                                 }
                             }
-                        } catch {
+                        }
+                        catch {
                             # Skip problematic user profiles
                             continue
                         }
@@ -362,30 +366,34 @@ function Test-MonitorSoftware {
         if ($SearchMethod -eq "EQ" -and $found) {
             $shouldAlert = $true
             $message = "Software '$SoftwareName' is installed: $($foundDetails -join '; ')"
-        } elseif ($SearchMethod -eq "NE" -and -not $found) {
+        }
+        elseif ($SearchMethod -eq "NE" -and -not $found) {
             $shouldAlert = $true
             $message = "Software '$SoftwareName' is not installed"
-        } else {
+        }
+        else {
             $message = if ($found) {
                 "Software '$SoftwareName' is installed: $($foundDetails -join '; ')"
-            } else {
+            }
+            else {
                 "Software '$SoftwareName' is not installed"
             }
         }
 
         return @{
-            Found = $found
+            Found       = $found
             ShouldAlert = $shouldAlert
-            Message = $message
-            Details = $foundDetails
+            Message     = $message
+            Details     = $foundDetails
         }
 
-    } catch {
+    }
+    catch {
         return @{
-            Found = $false
+            Found       = $false
             ShouldAlert = $true
-            Message = "Error checking software '$SoftwareName': $($_.Exception.Message)"
-            Details = @()
+            Message     = "Error checking software '$SoftwareName': $($_.Exception.Message)"
+            Details     = @()
         }
     }
 }
@@ -421,8 +429,8 @@ function Test-MonitorMultipleSoftware {
     if (-not $SoftwareList) {
         return @{
             ShouldAlert = $true
-            Message = "No software specified for monitoring"
-            Results = @()
+            Message     = "No software specified for monitoring"
+            Results     = @()
         }
     }
 
@@ -449,9 +457,9 @@ function Test-MonitorMultipleSoftware {
 
     return @{
         ShouldAlert = $overallAlert
-        Message = if ($alertMessages) { $alertMessages -join "; " } else { $summary }
-        Results = $results
-        Summary = $summary
+        Message     = if ($alertMessages) { $alertMessages -join "; " } else { $summary }
+        Results     = $results
+        Summary     = $summary
     }
 }
 
