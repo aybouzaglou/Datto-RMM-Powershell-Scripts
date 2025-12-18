@@ -1,4 +1,4 @@
-# WARP.md
+# AGENT.md
 
 This file provides guidance to WARP (warp.dev) when working with code in this repository.
 
@@ -183,6 +183,37 @@ function Write-MonitorAlert {
     exit 1
 }
 ```
+
+## AI Agent Guidelines
+
+### Communication & Formatting Rules
+When generating implementation plans, walkthroughs, or messages, follow these formatting rules to ensure compatibility with the user's environment:
+
+- **File Link Rules**:
+    - **Absolute Paths**: Always use absolute paths with the `file:///` scheme.
+    - **No Backticks in Links**: Do not surround the link text with backticks, as it breaks the clickable link formatting in some UIs.
+        - ✅ Correct: `[clear-efi-partition.ps1](file:///path/to/script.ps1)`
+        - ❌ Incorrect: `[\`clear-efi-partition.ps1\`](file:///path/to/script.ps1)`
+    - **Line References**: Use `#L123-L145` at the end of the URL for line ranges.
+
+- **Artifact Usage**:
+    - Create `implementation_plan.md` for approval before execution.
+    - Create `walkthrough.md` to document results and provide proof of work.
+    - Use `task.md` to track progress through complex tasks.
+
+### Lint Rules (PSScriptAnalyzer)
+Future AI models must ensure all code complies with the repository's linting standards defined in [PSScriptAnalyzerSettings.psd1](file:///Users/avrahambouzaglou/Documents/Powershell Repo/Datto-RMM-Powershell-Scripts/PSScriptAnalyzerSettings.psd1).
+
+**Strict Requirements**:
+- **Scoped Variables**: Use `$script:` or local variables instead of `$global:`.
+- **Modern Cmdlets**: Use `Get-CimInstance` instead of `Get-WmiObject`.
+- **Doc'd Error Handling**: Never use empty `catch` blocks. Use `$null = $_` and a comment to explicitly ignore expected errors.
+- **RMM Logging**: Follow the established prefix pattern (`SUCCESS`, `FAILED`, `STATUS`, `METRIC`, etc.) for all output.
+
+### PowerShell Coding Standards for AI
+- **No += with Arrays**: Use `[System.Collections.Generic.List[object]]::new()`.
+- **RMM Output Method**: Monitors MUST use `Write-Host` for diagnostic/result blocks.
+- **Admin Check**: Include administrative privilege checks for scripts requiring system-level changes.
 
 ## Critical Development Rules
 
