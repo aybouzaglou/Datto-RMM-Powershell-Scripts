@@ -7,8 +7,6 @@
     - Unused font files from EFI\Microsoft\Boot\Fonts
     - Update capsule files from EFI\Microsoft\Boot\UpdateCapsule
 
-    This is a lightweight alternative to resizing the WinRE partition when
-    Windows Update fails due to insufficient space on the system partition.
 
 .COMPONENT
     Category=Scripts ; Level=Medium(3) ; Timeout=300s ; Build=1.0.0
@@ -33,7 +31,7 @@
 
 .NOTES
     Version:        1.0.0
-    Author:         Datto RMM Script
+    Author:         Abraham Bouzaglou 
     Creation Date:  12/18/2025
     Purpose:        Free ESP space for Windows Update compatibility
 #>
