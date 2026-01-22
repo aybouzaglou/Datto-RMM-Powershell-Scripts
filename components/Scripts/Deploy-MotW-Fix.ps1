@@ -512,7 +512,6 @@ try {
         Write-RMMLog ""
         Write-RMMLog "All operations completed successfully" -Level Success
         Write-RMMLog "File Explorer preview should now work for internet-downloaded files" -Level Info
-        $exitCode = 0
     }
 
 }
