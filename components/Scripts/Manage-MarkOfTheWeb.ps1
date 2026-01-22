@@ -226,27 +226,33 @@ function Unblock-MotWFiles {
         return $false
     }
     
-    Write-RMMLog "File patterns: $($Patterns -join ', ')" -Level Config
+    # Determine if this is a full profile scan (recursive, all files)
+    $IsFullProfileScan = $Scope -eq "UserProfile" -or (![string]::IsNullOrWhiteSpace($CustomPath) -and $TargetPath -eq $env:USERPROFILE)
+    
+    if (!$IsFullProfileScan) {
+        Write-RMMLog "File patterns: $($Patterns -join ', ')" -Level Config
+    }
     
     # Performance warning for full profile scan
-    if ($Scope -eq "UserProfile" -or (![string]::IsNullOrWhiteSpace($CustomPath) -and $TargetPath -eq $env:USERPROFILE)) {
+    if ($IsFullProfileScan) {
         Write-RMMLog "WARNING: Full profile scan may take several minutes" -Level Warning
         Write-RMMLog "This operation will recursively scan all subdirectories" -Level Warning
+        Write-RMMLog "File patterns will be ignored (all files processed)" -Level Info
     }
     
     try {
         $TotalUnblocked = 0
         $RecurseOption = @{}
         
-        # Add -Recurse for UserProfile scope or when CustomPath matches USERPROFILE
-        if ($Scope -eq "UserProfile" -or (![string]::IsNullOrWhiteSpace($CustomPath) -and $TargetPath -eq $env:USERPROFILE)) {
+        # Add -Recurse for full profile scans
+        if ($IsFullProfileScan) {
             $RecurseOption['Recurse'] = $true
             Write-RMMLog "Recursive scan enabled" -Level Info
         }
         
         # For Downloads or other scopes, use patterns
         # For UserProfile, unblock all files (ignore patterns)
-        if ($Scope -eq "UserProfile" -or (![string]::IsNullOrWhiteSpace($CustomPath) -and $TargetPath -eq $env:USERPROFILE)) {
+        if ($IsFullProfileScan) {
             Write-RMMLog "Starting bulk unblock operation (all files)..." -Level Status
             
             # Get all files recursively and unblock
@@ -350,13 +356,25 @@ if ($UnblockFiles -and [string]::IsNullOrWhiteSpace($CustomPath)) {
     }
 }
 
-# Parse file patterns
+# Parse file patterns (only needed for non-full-profile scans)
 $PatternArray = @()
-if ($UnblockFiles -and $UnblockScope -ne "UserProfile") {
-    $PatternArray = $FilePatterns.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-    if ($PatternArray.Count -eq 0) {
-        Write-RMMLog "Configuration error: FilePatterns is empty" -Level Error
-        exit 2
+if ($UnblockFiles) {
+    # Determine if custom path will trigger full profile scan
+    $CustomPathExpandedTemp = if (![string]::IsNullOrWhiteSpace($CustomPath)) { 
+        [Environment]::ExpandEnvironmentVariables($CustomPath) 
+    } else { 
+        "" 
+    }
+    $WillBeFullProfileScan = $UnblockScope -eq "UserProfile" -or 
+                             (![string]::IsNullOrWhiteSpace($CustomPathExpandedTemp) -and $CustomPathExpandedTemp -eq $env:USERPROFILE)
+    
+    # Only validate patterns if not doing full profile scan
+    if (!$WillBeFullProfileScan) {
+        $PatternArray = $FilePatterns.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+        if ($PatternArray.Count -eq 0) {
+            Write-RMMLog "Configuration error: FilePatterns is empty" -Level Error
+            exit 2
+        }
     }
 }
 
