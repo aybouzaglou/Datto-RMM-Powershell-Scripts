@@ -141,6 +141,32 @@ function Get-RMMVariable {
 #                                    OPERATION FUNCTIONS                                                   #
 ############################################################################################################
 
+function Test-IsFullProfileScan {
+    <#
+    .SYNOPSIS
+        Determines if the operation will perform a full user profile scan
+    .DESCRIPTION
+        A full profile scan occurs when UnblockScope is UserProfile or when CustomPath equals USERPROFILE
+    #>
+    param(
+        [string]$Scope,
+        [string]$CustomPath
+    )
+    
+    if ($Scope -eq "UserProfile") {
+        return $true
+    }
+    
+    if (![string]::IsNullOrWhiteSpace($CustomPath)) {
+        $ExpandedPath = [Environment]::ExpandEnvironmentVariables($CustomPath)
+        if ($ExpandedPath -eq $env:USERPROFILE) {
+            return $true
+        }
+    }
+    
+    return $false
+}
+
 function Enable-MotWPolicy {
     <#
     .SYNOPSIS
@@ -227,7 +253,7 @@ function Unblock-MotWFiles {
     }
     
     # Determine if this is a full profile scan (recursive, all files)
-    $IsFullProfileScan = $Scope -eq "UserProfile" -or (![string]::IsNullOrWhiteSpace($CustomPath) -and $TargetPath -eq $env:USERPROFILE)
+    $IsFullProfileScan = Test-IsFullProfileScan -Scope $Scope -CustomPath $CustomPath
     
     if (!$IsFullProfileScan) {
         Write-RMMLog "File patterns: $($Patterns -join ', ')" -Level Config
@@ -359,14 +385,8 @@ if ($UnblockFiles -and [string]::IsNullOrWhiteSpace($CustomPath)) {
 # Parse file patterns (only needed for non-full-profile scans)
 $PatternArray = @()
 if ($UnblockFiles) {
-    # Determine if custom path will trigger full profile scan
-    $CustomPathExpandedTemp = if (![string]::IsNullOrWhiteSpace($CustomPath)) { 
-        [Environment]::ExpandEnvironmentVariables($CustomPath) 
-    } else { 
-        "" 
-    }
-    $WillBeFullProfileScan = $UnblockScope -eq "UserProfile" -or 
-                             (![string]::IsNullOrWhiteSpace($CustomPathExpandedTemp) -and $CustomPathExpandedTemp -eq $env:USERPROFILE)
+    # Determine if this will be a full profile scan
+    $WillBeFullProfileScan = Test-IsFullProfileScan -Scope $UnblockScope -CustomPath $CustomPath
     
     # Only validate patterns if not doing full profile scan
     if (!$WillBeFullProfileScan) {
