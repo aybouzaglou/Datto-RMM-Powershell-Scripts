@@ -134,7 +134,7 @@ function Get-RMMVariable {
             catch { $Default }
         }
         "Boolean" {
-            $envValue -eq 'true' -or $envValue -eq '1' -or $envValue -eq 'yes'
+            @('true', '1', 'yes') -contains $envValue.ToLowerInvariant()
         }
         default { $envValue }
     }
@@ -248,7 +248,7 @@ function Test-FileHasMotW {
 
     try {
         $streams = Get-Item -Path $FilePath -Stream * -ErrorAction SilentlyContinue
-        return ($streams | Where-Object { $_.Stream -eq 'Zone.Identifier' }) -ne $null
+        return $streams.Stream -contains 'Zone.Identifier'
     }
     catch {
         return $false
@@ -412,11 +412,10 @@ Write-RMMLog "Computer: $env:COMPUTERNAME" -Level Config
 Write-RMMLog "User: $env:USERNAME" -Level Config
 Write-RMMLog ""
 
-# Process configuration
-$FixOperation = Get-RMMVariable -Name "FixOperation" -Default "Both"
-$UnblockMode = Get-RMMVariable -Name "UnblockMode" -Default "Downloads"
-$CustomPath = Get-RMMVariable -Name "CustomPath" -Default ""
-$FileExtensions = Get-RMMVariable -Name "FileExtensions" -Default "pdf,docx,xlsx,pptx,doc,xls,ppt"
+# Apply defaults for empty parameters (preserves command-line values if provided)
+if ([string]::IsNullOrWhiteSpace($FixOperation)) { $FixOperation = "Both" }
+if ([string]::IsNullOrWhiteSpace($UnblockMode)) { $UnblockMode = "Downloads" }
+if ([string]::IsNullOrWhiteSpace($FileExtensions)) { $FileExtensions = "pdf,docx,xlsx,pptx,doc,xls,ppt" }
 
 # Validate FixOperation
 $validOperations = @("PolicyOnly", "UnblockOnly", "Both")
