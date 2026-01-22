@@ -101,6 +101,7 @@ docs/              # Documentation
 - `ScanSnapHome.ps1` - ScanSnap Home installation
 
 ### Scripts
+- `Manage-MarkOfTheWeb.ps1` - Mark of the Web (MotW) policy and file unblock management
 - `FocusedDebloat.ps1` - Windows bloatware removal
 - `Setup-TestDevice.ps1` - Test device configuration
 
