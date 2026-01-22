@@ -300,6 +300,7 @@ function Invoke-UnblockByPattern {
                 }
             }
             catch {
+                Write-RMMLog "Failed to unblock file '$($file.FullName)': $($_.Exception.Message)" -Level Warning
                 $results.Failed++
             }
         }
