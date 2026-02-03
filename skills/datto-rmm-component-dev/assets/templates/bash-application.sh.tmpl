@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+# {{NAME}} - Datto RMM Application ({{OS}})
+#
+# DESCRIPTION:
+#   Application deployment/management component for Datto RMM.
+#   Prefer Datto file attachments (available in working directory) or vendor downloads with validation.
+#
+# COMPONENT:
+#   Category=Applications ; Timeout=1800s ; Build={{VERSION}}
+#
+# INPUTS:
+#   [Define env vars used here]
+#
+# REQUIRES:
+#   root
+
+set -euo pipefail
+
+log() {
+  local level="${1:?level}"
+  shift
+  printf '%s %s\n' "${level}" "$*"
+}
+
+main() {
+  log "STATUS" "Starting {{NAME}} ({{FILENAME}})..."
+
+  # Example attachment usage:
+  # installer_file="${INSTALLER_FILE:-installer.pkg}"
+  # if [[ ! -f "${installer_file}" ]]; then
+  #   log "ERROR" "Missing attached installer: ${installer_file}"
+  #   exit 1
+  # fi
+
+  # TODO: Implement install/uninstall logic
+
+  log "SUCCESS" "{{NAME}} completed successfully"
+}
+
+main "$@"

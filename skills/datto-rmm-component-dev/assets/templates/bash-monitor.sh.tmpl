@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+# {{NAME}} - Datto RMM Monitor ({{OS}})
+#
+# DESCRIPTION:
+#   Monitor component with diagnostic-first output and strict Datto RMM marker contract.
+#   Emit exactly one {{OUTPUT_VAR}}=... line inside the result block.
+#
+# COMPONENT:
+#   Category=Monitors ; Timeout=3s ; Build={{VERSION}}
+#
+# INPUTS:
+#   [Define env vars used here]
+#
+# REQUIRES:
+#   root (recommended)
+
+set -euo pipefail
+
+output_var="{{OUTPUT_VAR}}"
+
+monitor_alert() {
+  local message="${1:?message}"
+  local code="${2:-1}"
+  echo "<-End Diagnostic->"
+  echo "<-Start Result->"
+  echo "${output_var}=CRITICAL: ${message}"
+  echo "<-End Result->"
+  exit "${code}"
+}
+
+monitor_ok() {
+  local message="${1:?message}"
+  echo "<-End Diagnostic->"
+  echo "<-Start Result->"
+  echo "${output_var}=OK: ${message}"
+  echo "<-End Result->"
+  exit 0
+}
+
+echo "<-Start Diagnostic->"
+echo "{{NAME}} ({{FILENAME}}) starting..."
+
+main() {
+  # TODO: Implement check logic
+  local healthy="true"
+  local details="All checks passed"
+
+  if [[ "${healthy}" != "true" ]]; then
+    echo "Detected unhealthy state: ${details}"
+    monitor_alert "${details}" 1
+  fi
+
+  echo "Healthy: ${details}"
+  monitor_ok "${details}"
+}
+
+main "$@"

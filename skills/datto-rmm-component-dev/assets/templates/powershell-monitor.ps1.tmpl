@@ -1,0 +1,92 @@
+<#
+.SYNOPSIS
+    {{NAME}} - Datto RMM Monitor (Windows)
+
+.DESCRIPTION
+    Monitor component with diagnostic-first output and strict Datto RMM marker contract.
+    Use Write-Host exclusively. Emit exactly one {{OUTPUT_VAR}}=... line in the result block.
+
+.COMPONENT
+    Category=Monitors ; Level=Low(2) ; Timeout=3s ; Build={{VERSION}}
+
+.INPUTS
+    [Define env vars used here]
+
+.REQUIRES
+    LocalSystem ; PSVersion >=5.0
+#>
+
+[CmdletBinding()]
+param()
+
+############################################################################################################
+#                                    EMBEDDED FUNCTION LIBRARY                                            #
+############################################################################################################
+
+function Get-RMMVariable {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [ValidateSet('String','Boolean','Integer')][string]$Type = 'String',
+        $Default = $null
+    )
+
+    $envValue = [Environment]::GetEnvironmentVariable($Name)
+    if ([string]::IsNullOrWhiteSpace($envValue)) { return $Default }
+
+    switch ($Type) {
+        'Integer' { try { return [int]$envValue } catch { return $Default } }
+        'Boolean' { return ($envValue -eq 'true' -or $envValue -eq '1' -or $envValue -eq 'yes') }
+        default   { return $envValue }
+    }
+}
+
+function Write-MonitorAlert {
+    param(
+        [Parameter(Mandatory = $true)][string]$Message,
+        [int]$ExitCode = 1
+    )
+    Write-Host '<-End Diagnostic->'
+    Write-Host '<-Start Result->'
+    Write-Host "{{OUTPUT_VAR}}=CRITICAL: $Message"
+    Write-Host '<-End Result->'
+    exit $ExitCode
+}
+
+function Write-MonitorOk {
+    param(
+        [Parameter(Mandatory = $true)][string]$Message
+    )
+    Write-Host '<-End Diagnostic->'
+    Write-Host '<-Start Result->'
+    Write-Host "{{OUTPUT_VAR}}=OK: $Message"
+    Write-Host '<-End Result->'
+    exit 0
+}
+
+############################################################################################################
+#                                    DIAGNOSTIC PHASE                                                     #
+############################################################################################################
+
+Write-Host '<-Start Diagnostic->'
+Write-Host "{{NAME}} ({{FILENAME}}) starting..."
+
+try {
+    # Example env var usage
+    # $Threshold = Get-RMMVariable -Name "Threshold" -Type "Integer" -Default 10
+
+    # TODO: Implement check logic
+    $healthy = $true
+    $details = "All checks passed"
+
+    if (-not $healthy) {
+        Write-Host "Detected unhealthy state: $details"
+        Write-MonitorAlert $details
+    }
+
+    Write-Host "Healthy: $details"
+    Write-MonitorOk $details
+}
+catch {
+    Write-Host "Unhandled exception: $($_.Exception.Message)"
+    Write-MonitorAlert "Unhandled exception: $($_.Exception.Message)"
+}

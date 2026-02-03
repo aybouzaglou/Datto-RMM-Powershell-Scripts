@@ -40,6 +40,10 @@ Thumbs.db
 *.ps1xml
 PSReadLineHistory.txt
 
+# Python cache
+__pycache__/
+*.pyc
+
 # Logs
 logs/
 *.log

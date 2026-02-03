@@ -1,0 +1,93 @@
+<#
+.SYNOPSIS
+    {{NAME}} - Datto RMM Script (Windows)
+
+.DESCRIPTION
+    General automation script intended for direct deployment in Datto RMM.
+    Use environment variables for configuration and Write-RMMLog for parseable output.
+
+.COMPONENT
+    Category=Scripts ; Level=Medium(3) ; Timeout=900s ; Build={{VERSION}}
+
+.INPUTS
+    [Define env vars used here]
+
+.REQUIRES
+    LocalSystem ; PSVersion >=5.0
+#>
+
+[CmdletBinding()]
+param()
+
+############################################################################################################
+#                                    EMBEDDED FUNCTION LIBRARY                                            #
+############################################################################################################
+
+function Write-RMMLog {
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$Message,
+        [ValidateSet('Success','Failed','Warning','Status','Config','Detect','Metric','Info')]
+        [string]$Level = 'Info'
+    )
+
+    if ([string]::IsNullOrEmpty($Message)) {
+        Write-Output ""
+        return
+    }
+
+    $prefix = switch ($Level) {
+        'Success' { 'SUCCESS ' }
+        'Failed'  { 'FAILED  ' }
+        'Warning' { 'WARNING ' }
+        'Status'  { 'STATUS  ' }
+        'Config'  { 'CONFIG  ' }
+        'Detect'  { 'DETECT  ' }
+        'Metric'  { 'METRIC  ' }
+        default   { 'INFO    ' }
+    }
+
+    Write-Output "$prefix$Message"
+}
+
+function Get-RMMVariable {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [ValidateSet('String','Boolean','Integer')][string]$Type = 'String',
+        $Default = $null,
+        [switch]$Required
+    )
+
+    $envValue = [Environment]::GetEnvironmentVariable($Name)
+    if ([string]::IsNullOrWhiteSpace($envValue)) {
+        if ($Required) { throw "Missing required environment variable: $Name" }
+        return $Default
+    }
+
+    switch ($Type) {
+        'Integer' { try { return [int]$envValue } catch { return $Default } }
+        'Boolean' { return ($envValue -eq 'true' -or $envValue -eq '1' -or $envValue -eq 'yes') }
+        default   { return $envValue }
+    }
+}
+
+############################################################################################################
+#                                    MAIN SCRIPT LOGIC                                                    #
+############################################################################################################
+
+try {
+    Write-RMMLog "Starting {{NAME}} ({{FILENAME}})..." -Level Status
+
+    # Example env var usage
+    # $SomeValue = Get-RMMVariable -Name "SomeValue" -Type "String" -Default "default"
+
+    # TODO: Implement script logic
+
+    Write-RMMLog "{{NAME}} completed successfully" -Level Success
+    exit 0
+}
+catch {
+    Write-RMMLog "{{NAME}} failed: $($_.Exception.Message)" -Level Failed
+    exit 1
+}

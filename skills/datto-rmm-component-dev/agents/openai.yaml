@@ -1,0 +1,4 @@
+interface:
+  display_name: "Datto RMM Component Dev"
+  short_description: "Build/debug Datto RMM components"
+  default_prompt: "Use $datto-rmm-component-dev to create or debug a Datto RMM PowerShell/Bash component in this repo."

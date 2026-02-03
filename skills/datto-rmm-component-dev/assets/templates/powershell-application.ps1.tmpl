@@ -1,0 +1,97 @@
+<#
+.SYNOPSIS
+    {{NAME}} - Datto RMM Application (Windows)
+
+.DESCRIPTION
+    Application deployment/management component for Datto RMM.
+    Prefer file attachments for installers (reference by filename) or vendor downloads with validation.
+
+.COMPONENT
+    Category=Applications ; Level=High(4) ; Timeout=1800s ; Build={{VERSION}}
+
+.INPUTS
+    [Define env vars used here]
+
+.REQUIRES
+    LocalSystem ; PSVersion >=5.0
+#>
+
+[CmdletBinding()]
+param()
+
+# Datto RMM copies attached files into the component working directory.
+# Reference attachments by filename (e.g., "installer.msi").
+
+############################################################################################################
+#                                    EMBEDDED FUNCTION LIBRARY                                            #
+############################################################################################################
+
+function Write-RMMLog {
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$Message,
+        [ValidateSet('Success','Failed','Warning','Status','Config','Detect','Metric','Info')]
+        [string]$Level = 'Info'
+    )
+
+    if ([string]::IsNullOrEmpty($Message)) {
+        Write-Output ""
+        return
+    }
+
+    $prefix = switch ($Level) {
+        'Success' { 'SUCCESS ' }
+        'Failed'  { 'FAILED  ' }
+        'Warning' { 'WARNING ' }
+        'Status'  { 'STATUS  ' }
+        'Config'  { 'CONFIG  ' }
+        'Detect'  { 'DETECT  ' }
+        'Metric'  { 'METRIC  ' }
+        default   { 'INFO    ' }
+    }
+
+    Write-Output "$prefix$Message"
+}
+
+function Get-RMMVariable {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [ValidateSet('String','Boolean','Integer')][string]$Type = 'String',
+        $Default = $null,
+        [switch]$Required
+    )
+
+    $envValue = [Environment]::GetEnvironmentVariable($Name)
+    if ([string]::IsNullOrWhiteSpace($envValue)) {
+        if ($Required) { throw "Missing required environment variable: $Name" }
+        return $Default
+    }
+
+    switch ($Type) {
+        'Integer' { try { return [int]$envValue } catch { return $Default } }
+        'Boolean' { return ($envValue -eq 'true' -or $envValue -eq '1' -or $envValue -eq 'yes') }
+        default   { return $envValue }
+    }
+}
+
+############################################################################################################
+#                                    MAIN SCRIPT LOGIC                                                    #
+############################################################################################################
+
+try {
+    Write-RMMLog "Starting {{NAME}} ({{FILENAME}})..." -Level Status
+
+    # Example attachment usage
+    # $InstallerFile = Get-RMMVariable -Name "InstallerFile" -Default "installer.msi"
+    # if (-not (Test-Path $InstallerFile)) { throw "Missing attached file: $InstallerFile" }
+
+    # TODO: Implement install/uninstall logic
+
+    Write-RMMLog "{{NAME}} completed successfully" -Level Success
+    exit 0
+}
+catch {
+    Write-RMMLog "{{NAME}} failed: $($_.Exception.Message)" -Level Failed
+    exit 1
+}

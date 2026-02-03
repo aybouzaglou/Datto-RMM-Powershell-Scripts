@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+# {{NAME}} - Datto RMM Script ({{OS}})
+#
+# DESCRIPTION:
+#   General automation script intended for direct deployment in Datto RMM.
+#   Configure via environment variables; keep output stable and actionable.
+#
+# COMPONENT:
+#   Category=Scripts ; Timeout=900s ; Build={{VERSION}}
+#
+# INPUTS:
+#   [Define env vars used here]
+#
+# REQUIRES:
+#   root (recommended)
+
+set -euo pipefail
+
+log() {
+  # Levels: INFO, STATUS, SUCCESS, WARNING, ERROR
+  local level="${1:?level}"
+  shift
+  printf '%s %s\n' "${level}" "$*"
+}
+
+require_env() {
+  local name="${1:?env var name}"
+  if [[ -z "${!name:-}" ]]; then
+    log "ERROR" "Missing required environment variable: ${name}"
+    exit 1
+  fi
+}
+
+main() {
+  log "STATUS" "Starting {{NAME}} ({{FILENAME}})..."
+
+  # Example:
+  # require_env "SOME_VALUE"
+
+  # TODO: Implement script logic
+
+  log "SUCCESS" "{{NAME}} completed successfully"
+}
+
+main "$@"
